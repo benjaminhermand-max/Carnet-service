@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Carnet de Service — Évaluation restaurant d'application</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7A1E2B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Carnet de Service">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF6EF; --panel:#ffffff; --ink:#2A2420; --muted:#8A7F73;
+  --wine:#7A1E2B; --wine-deep:#5E141F; --gold:#B08D57; --gold-soft:#EBDFC8;
+  --line:#E7DECF; --line-soft:#F0E9DC;
+  --exc:#1F6E4A; --tres:#2D6CA8; --sat:#C0871A; --faible:#B23A48;
+  --exc-bg:#E4F1EA; --tres-bg:#E5EEF7; --sat-bg:#F7EDD8; --faible-bg:#F6E3E5;
+  --shadow:0 1px 2px rgba(42,36,32,.06),0 8px 24px rgba(42,36,32,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  background:var(--paper); color:var(--ink); font-size:16px; line-height:1.4;
+  -webkit-text-size-adjust:100%; -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer}
+h1,h2,h3{font-family:'Playfair Display',Georgia,serif;font-weight:700;margin:0}
+.app{max-width:1500px;margin:0 auto;padding:0 14px 120px}
+
+/* ---------- Header ---------- */
+header{
+  position:sticky;top:0;z-index:40;background:var(--wine);color:#fff;
+  margin:0 -14px 18px;padding:12px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  box-shadow:0 2px 12px rgba(94,20,31,.25);
+}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand .mark{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;letter-spacing:.2px}
+.brand .sub{font-size:12.5px;color:#F3D9C9;letter-spacing:.06em;text-transform:uppercase}
+.hdr-field{display:flex;align-items:center;gap:8px;font-size:13px;color:#F3D9C9}
+header select{
+  font:inherit;font-size:15px;font-weight:600;color:#fff;background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:8px 12px;min-height:42px;
+}
+header select option{color:#2A2420}
+.icon-btn{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#fff;
+  border-radius:10px;padding:9px 13px;font-size:14px;font-weight:600;min-height:42px;
+}
+.icon-btn:active{background:rgba(255,255,255,.25)}
+
+/* ---------- Tabs (classe + vues) ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:12px 20px;font-size:16px;font-weight:600;color:var(--muted);min-height:48px;box-shadow:var(--shadow)
+}
+.tab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.classtab.on{background:var(--wine);border-color:var(--wine)}
+.seg{display:flex;gap:6px;background:var(--line-soft);padding:5px;border-radius:14px}
+.seg .tab{box-shadow:none;border:none;background:transparent}
+.seg .tab.on{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+
+.row-between{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;margin-bottom:14px}
+.title-lg{font-size:26px}
+.eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:2px}
+
+/* ---------- Buttons ---------- */
+.btn{border:none;border-radius:12px;padding:13px 20px;font-size:16px;font-weight:600;min-height:50px}
+.btn-primary{background:var(--wine);color:#fff}
+.btn-primary:active{background:var(--wine-deep)}
+.btn-ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-sm{padding:9px 14px;font-size:14px;min-height:42px;border-radius:10px}
+.btn-danger{background:var(--faible-bg);color:var(--faible);border:1px solid #E7C4C8}
+
+/* ---------- Card / empty ---------- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:20px}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty h3{font-size:22px;color:var(--ink);margin-bottom:8px}
+.empty p{margin:0 auto 18px;max-width:440px}
+
+/* ---------- Eval grid ---------- */
+.grid-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel);box-shadow:var(--shadow);-webkit-overflow-scrolling:touch}
+table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:1180px}
+table.grid th,table.grid td{padding:0;text-align:center;border-bottom:1px solid var(--line-soft)}
+table.grid thead th{
+  position:sticky;top:0;background:#F6EFE2;z-index:5;font-size:12px;font-weight:700;color:var(--ink);
+  padding:10px 4px;border-bottom:2px solid var(--gold-soft);line-height:1.15
+}
+table.grid thead th .pp{display:block;font-size:11px;color:var(--gold);font-weight:700;margin-top:2px}
+.col-name{position:sticky;left:0;z-index:6;background:var(--panel);text-align:left!important;
+  min-width:190px;max-width:190px;padding:0 14px!important;border-right:1px solid var(--line)}
+thead .col-name{z-index:7;background:#F6EFE2}
+.col-name .nm{font-weight:600;font-size:15px;display:block;padding:12px 0}
+tbody tr:nth-child(even) .col-name{background:#FCFAF5}
+tbody tr:nth-child(even) td{background:#FCFAF5}
+.cell{width:100%;height:100%;min-height:58px;border:none;background:transparent;font-size:15px;font-weight:700;color:#cfc6b6;display:flex;align-items:center;justify-content:center}
+.cell.on{background:var(--wine);color:#fff}
+.cell.on::after{content:attr(data-pts)}
+.cell:not(.on)::after{content:"—";color:#d9d0c0}
+.cell.off{opacity:.3;pointer-events:none}
+.abs-col{min-width:74px;max-width:74px;border-left:1px solid var(--line);background:#FBF6EC}
+.poste-col{min-width:148px;max-width:148px;border-left:1px solid var(--line);background:#FBF6EC}
+.poste-btn{width:100%;min-height:58px;border:none;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2}
+.poste-btn.set{color:var(--ink)}
+.poste-btn.repeat{background:var(--faible-bg);color:var(--faible)}
+.poste-btn .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.poste-btn:active{background:var(--line-soft)}
+.poste-opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.poste-opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:600;color:var(--ink);min-height:54px}
+.poste-opt .dot{width:14px;height:14px;border-radius:50%;flex:none}
+.poste-opt .opt-label{flex:1}
+.poste-opt.sel{border-color:var(--gold);background:var(--gold-soft)}
+.poste-opt.prev{border-color:#E7C4C8;background:var(--faible-bg);color:var(--faible)}
+.poste-opt.prev .opt-label{color:var(--faible)}
+.poste-opt:active{transform:scale(.99)}
+.prev-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--faible);padding:3px 8px;border-radius:999px}
+.sel-badge{color:var(--wine);font-weight:700}
+.prev-tag{display:inline-block;background:var(--faible-bg);color:var(--faible);border:1px solid #E7C4C8;padding:2px 8px;border-radius:999px;font-weight:700;font-size:13px}
+thead .poste-col,thead .abs-col{background:#F0E7D6}
+.abs-btn{width:100%;min-height:58px;border:none;background:transparent;font-size:13px;font-weight:700;color:#cfc6b6;letter-spacing:.04em}
+.abs-btn.on{background:#6B6358;color:#fff}
+.row-abs .col-name .nm{color:var(--muted);text-decoration:line-through;text-decoration-color:#cabfae}
+td.crit{padding:0;border-left:1px solid var(--line-soft)}
+.note-cell{min-width:92px;font-weight:700}
+.note-badge{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:64px;padding:7px 6px;border-radius:12px;font-size:20px;line-height:1;border:1.5px solid}
+.note-badge small{font-size:10px;font-weight:700;letter-spacing:.04em;margin-top:3px;text-transform:uppercase}
+.b-exc{background:var(--exc-bg);color:var(--exc);border-color:#BfE0CD}
+.b-tres{background:var(--tres-bg);color:var(--tres);border-color:#C3D8EC}
+.b-sat{background:var(--sat-bg);color:var(--sat);border-color:#EBD6A6}
+.b-faible{background:var(--faible-bg);color:var(--faible);border-color:#E7C4C8}
+.b-abs{background:#ECE7DE;color:#6B6358;border-color:#D8D0C2}
+.gfseg{margin-bottom:14px;width:fit-content}
+.grp-chip{display:inline-block;background:var(--gold-soft);color:var(--wine);border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:5px;vertical-align:middle}
+.grp-ctrl{display:inline-flex;gap:6px;margin-right:6px}
+.grp-set{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-weight:700;color:var(--muted);font-size:15px}
+.grp-set.on{background:var(--wine);color:#fff;border-color:var(--wine)}
+.pchip{display:inline-block;min-width:42px;padding:5px 8px;border-radius:8px;color:#fff;font-size:12px;font-weight:700;letter-spacing:.03em;text-align:center}
+.pchip.empty{background:transparent;color:#cbbfae;border:1px dashed #E1D7C6;font-weight:600;min-width:24px;padding:5px 6px}
+.pchip.abs{background:#ECE7DE;color:#6B6358}
+.plegend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0 16px;font-size:13px;color:var(--muted);align-items:center}
+.plegend span{display:inline-flex;align-items:center;gap:7px}
+.sub-h{font-size:17px;margin:20px 0 8px}
+.hint-line{margin:0 0 10px;font-size:13.5px;color:var(--muted)}
+.pgrid td{padding:8px 6px;border-left:1px solid var(--line-soft)}
+.pgrid .svc-head{font-size:11px;font-weight:700;padding:9px 6px;white-space:nowrap}
+.pgrid .col-name{min-width:200px;max-width:200px}
+.cnt-cell{font-variant-numeric:tabular-nums;font-size:15px}
+.cnt{font-weight:700}
+.cnt.zero{color:#d8cfbf}
+.zero-cell{background:#FBF6EC}
+.cmt-btn{background:transparent;border:1px solid var(--line);border-radius:10px;width:42px;height:42px;font-size:18px;color:var(--muted)}
+.cmt-btn.has{background:var(--gold-soft);border-color:var(--gold);color:var(--wine)}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:13px;color:var(--muted)}
+.legend b{color:var(--ink)}
+.bands{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:12.5px}
+.bands span{padding:5px 10px;border-radius:999px;font-weight:600}
+
+/* ---------- Service picker ---------- */
+.svc-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.svc-bar select{font:inherit;font-size:15px;font-weight:600;padding:11px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel);min-height:48px;box-shadow:var(--shadow)}
+
+/* ---------- Students list ---------- */
+.stu-list{display:flex;flex-direction:column;gap:8px}
+.stu-row{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+.stu-row .num{width:30px;color:var(--gold);font-weight:700;font-variant-numeric:tabular-nums}
+.stu-row .name{flex:1;font-size:16px;font-weight:500}
+.stu-row input.editname{flex:1;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--gold);border-radius:8px}
+
+/* ---------- History ---------- */
+.week-card{margin-bottom:14px}
+.week-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.week-head h3{font-size:19px}
+.week-head .svc-tags{font-size:12.5px;color:var(--muted)}
+table.summary{width:100%;border-collapse:collapse;font-size:14.5px}
+table.summary th,table.summary td{padding:9px 10px;border-bottom:1px solid var(--line-soft);text-align:center}
+table.summary th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+table.summary td.name{text-align:left;font-weight:500}
+.mini-note{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(42,36,32,.45);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:var(--panel);border-radius:18px;max-width:560px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:24px}
+.modal h2{font-size:22px;margin-bottom:6px}
+.modal p.hint{color:var(--muted);font-size:14px;margin:0 0 16px}
+.modal label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px}
+.modal input[type=text],.modal input[type=date],.modal textarea,.modal select{
+  width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.modal textarea{min-height:120px;resize:vertical;line-height:1.5}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap}
+.cmt-name{font-weight:600;color:var(--wine)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:15px;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* ---------- Print ---------- */
+#print-area{display:none}
+@media print{
+  @page{size:A4 landscape;margin:12mm}
+  header,.tabs,.svc-bar,.row-between,.legend,.bands,.no-print,.overlay,.toast{display:none!important}
+  body{background:#fff}
+  .app{padding:0;max-width:none}
+  #app-view{display:none!important}
+  #print-area{display:block!important}
+  .pr-title{font-family:'Playfair Display',serif;font-size:22px;margin:0 0 2px}
+  .pr-sub{color:#555;font-size:13px;margin:0 0 16px}
+  .pr-table{width:100%;border-collapse:collapse;font-size:12px}
+  .pr-table th,.pr-table td{border:1px solid #bbb;padding:5px 6px;text-align:center}
+  .pr-table th{background:#f0e9db}
+  .pr-table td.l{text-align:left}
+  .pr-foot{margin-top:14px;font-size:11px;color:#666;display:flex;justify-content:space-between}
+  .fiche{page-break-after:always}
+  .fiche h2{font-family:'Playfair Display',serif;font-size:20px;margin:0 0 4px}
+  .pr-legend{font-size:10.5px;color:#555;margin:0 0 10px;line-height:1.6}
+}
+@media (max-width:560px){
+  .brand .sub{display:none}
+  .title-lg{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="mark">Carnet de Service</span>
+      <span class="sub">Restaurant d'application</span>
+    </div>
+    <div class="hdr-field">
+      <span>Année</span>
+      <select id="yearSel"></select>
+    </div>
+    <button class="icon-btn" id="addYearBtn" title="Nouvelle année scolaire">+ Année</button>
+    <button class="icon-btn" id="dataBtn" title="Sauvegarde / restauration">⋯ Données</button>
+    <button class="icon-btn" id="installBtn" title="Installer l'application" style="display:none">⤓ Installer</button>
+  </header>
+
+  <div id="app-view">
+    <!-- Classe tabs -->
+    <div class="tabs" id="classTabs"></div>
+
+    <!-- Vue tabs -->
+    <div class="row-between">
+      <div class="seg" id="viewTabs">
+        <button class="tab on" data-view="eval">Évaluer</button>
+        <button class="tab" data-view="history">Historique</button>
+        <button class="tab" data-view="postes">Postes</button>
+        <button class="tab" data-view="students">Élèves</button>
+      </div>
+    </div>
+
+    <div id="view"></div>
+  </div>
+</div>
+
+<!-- Print container -->
+<div id="print-area"></div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+(function(){
+/* ============ Storage (localStorage + repli mémoire) ============ */
+var memStore = {};
+var storageOK = true;
+try { var k='__t'+Date.now(); localStorage.setItem(k,'1'); localStorage.removeItem(k); }
+catch(e){ storageOK = false; }
+var STORE_KEY = 'carnetService.v1';
+function save(){
+  var s = JSON.stringify(DB);
+  if(storageOK){ try{ localStorage.setItem(STORE_KEY,s); return; }catch(e){ storageOK=false; } }
+  memStore[STORE_KEY]=s;
+}
+function loadRaw(){
+  if(storageOK){ try{ return localStorage.getItem(STORE_KEY); }catch(e){ storageOK=false; } }
+  return memStore[STORE_KEY]||null;
+}
+
+/* ============ Modèle ============ */
+var CRITERIA = [
+  {id:'tenue',  label:'Tenue professionnelle', short:'Tenue', pts:4, desc:'Uniforme propre, coiffure, hygiène'},
+  {id:'ponct',  label:'Ponctualité', short:'Ponctualité', pts:2, desc:'Présent et à l’heure au service'},
+  {id:'comm',   label:'Communication et expression orale', short:'Communication', pts:2, desc:'Aisance, vocabulaire, clarté'},
+  {id:'tech',   label:'Maîtrise des techniques de service', short:'Techniques', pts:3, desc:'Gestes professionnels maîtrisés'},
+  {id:'menu',   label:'Connaissance du menu', short:'Menu', pts:2, desc:'Plats, produits, argumentaire'},
+  {id:'orga',   label:'Organisation et autonomie', short:'Organisation', pts:2, desc:'Anticipation, gestion du rang'},
+  {id:'equipe', label:'Travail en équipe', short:'Équipe', pts:1, desc:'Coopération, entraide'},
+  {id:'attit',  label:'Attitude professionnelle', short:'Attitude', pts:2, desc:'Posture, savoir-être, discrétion'},
+  {id:'menage', label:'Ménage', short:'Ménage', pts:2, desc:'Mise en place, nettoyage, rangement'}
+]; // total = 20
+var MAX = CRITERIA.reduce(function(a,c){return a+c.pts},0);
+var CLASSES = ['2PROR','1PROR','Apprentis'];
+var POSTES = ['Office/plonge','Accueil','Bar','Chef de rang','Commis de rang','Run','Maître d\'hôtel','Caisse','Sommelier'];
+var POSTE_META = {
+  'Office/plonge'  :{code:'OFF', color:'#6B7280'},
+  'Accueil'        :{code:'ACC', color:'#2D6CA8'},
+  'Bar'            :{code:'BAR', color:'#7C4DB8'},
+  'Chef de rang'   :{code:'CDR', color:'#7A1E2B'},
+  'Commis de rang' :{code:'COM', color:'#9A7B45'},
+  'Run'            :{code:'RUN', color:'#2E8B8B'},
+  'Maître d\'hôtel':{code:'MDH', color:'#1F6E4A'},
+  'Caisse'         :{code:'CAI', color:'#A8741A'},
+  'Sommelier'      :{code:'SOM', color:'#B23A48'}
+};
+function posteCode(p){ return POSTE_META[p]?POSTE_META[p].code:''; }
+function posteColor(p){ return POSTE_META[p]?POSTE_META[p].color:'#999'; }
+
+function appreciation(n){
+  if(n>=17) return {txt:'Excellent niveau professionnel', band:'exc', cls:'b-exc'};
+  if(n>=14) return {txt:'Très satisfaisant', band:'tres', cls:'b-tres'};
+  if(n>=10) return {txt:'Niveau satisfaisant, quelques points à améliorer', band:'sat', cls:'b-sat'};
+  return {txt:'Compétences à renforcer', band:'faible', cls:'b-faible'};
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function defaultYearLabel(){
+  var d=new Date(), y=d.getFullYear();
+  // année scolaire bascule en août
+  if(d.getMonth()>=7) return y+'-'+(y+1);
+  return (y-1)+'-'+y;
+}
+function emptyClass(){ return {students:[], services:[]}; }
+function emptyYear(){ var o={}; CLASSES.forEach(function(c){o[c]=emptyClass()}); return o; }
+
+/* ============ Listes d'élèves intégrées ============ */
+var SEED = {
+  version:'2026-2027.svc7',
+  year:'2026-2027',
+  rosters:{
+    '1PROR':[
+      'CANOVA Raphael','CHAPON Jules','GRASSET Noé','GRUBER Louna',
+      'MARIAN Alina','SABATIER Nils','SUCHETET Zoé','TORRE MANTINAN BOWES Samuel'
+    ],
+    '2PROR':[
+      'ANDRE Jill','ASSO Calista','CARIA NEVES Stéphanie','CHAMAILLE Timothé',
+      'CHAUGNY-JOGUET Lynn','CHEVALLIER-FAIVRE Mati','DEVERGNIES Romane',
+      'DEVIDAL Jules','GRANIER Alice','GUNGOA Latika',
+      'LATHOUD Antoine','LECERF Pol','SULA Elma','TETREL Nathan','TRIMECH Adam',
+      'VACCA Jovan','VACCA Sevan','VARRONI Jeremy'
+    ],
+    'Apprentis':[
+      'COMBO Inara','GROSSET Roxane','LECONTE Thomas','MARINI Diego','PAVIGLIANITI Tiziano'
+    ]
+  },
+  services:{
+    // 2PROR = mercredi midi + jeudi midi (services confirmés de l'automne)
+    '2PROR':[
+      '2026-09-16','2026-09-17','2026-09-23','2026-09-24','2026-09-30','2026-10-01',
+      '2026-10-07','2026-10-08','2026-10-14','2026-10-15',
+      '2026-11-05','2026-11-12','2026-11-19','2026-11-25','2026-11-26',
+      '2026-12-02','2026-12-03','2026-12-16','2026-12-17'
+    ],
+    // 1PROR = vendredi midi (services confirmés de l'automne)
+    '1PROR':[
+      '2026-09-18','2026-09-25','2026-10-02','2026-10-16',
+      '2026-11-06','2026-11-13','2026-11-20','2026-11-27',
+      '2026-12-04','2026-12-11'
+    ],
+    // Apprentis (1PROH) = mercredi soir (services « menu » confirmés)
+    'Apprentis':[
+      '2026-09-16','2026-09-30','2026-11-04','2026-12-02'
+    ]
+  },
+  groups:{
+    // 2PROR : groupe A de Jill (ANDRE) à Latika (GUNGOA), groupe B le reste
+    '2PROR':{
+      A:['ANDRE Jill','ASSO Calista','CARIA NEVES Stéphanie','CHAMAILLE Timothé',
+         'CHAUGNY-JOGUET Lynn','CHEVALLIER-FAIVRE Mati','DEVERGNIES Romane',
+         'DEVIDAL Jules','GRANIER Alice','GUNGOA Latika'],
+      B:['LATHOUD Antoine','LECERF Pol','SULA Elma','TETREL Nathan','TRIMECH Adam',
+         'VACCA Jovan','VACCA Sevan','VARRONI Jeremy']
+    }
+  }
+};
+function applySeed(fresh){
+  if(!DB.years[SEED.year]) DB.years[SEED.year]=emptyYear();
+  // garantir que chaque classe existe (sinon l'ajout d'une nouvelle classe plante sur les données déjà enregistrées)
+  CLASSES.forEach(function(c){ if(!DB.years[SEED.year][c]) DB.years[SEED.year][c]=emptyClass(); });
+  if(fresh) DB.currentYear=SEED.year;
+  if(DB.seedApplied===SEED.version) return;
+  CLASSES.forEach(function(c){
+    var roster=SEED.rosters[c]||[], cl=DB.years[SEED.year][c], added=false;
+    roster.forEach(function(n){
+      if(!cl.students.some(function(s){return s.name===n})){
+        cl.students.push({id:uid(),name:n}); added=true;
+      }
+    });
+    if(added) cl.students.sort(function(a,b){return a.name.localeCompare(b.name,'fr');});
+  });
+  CLASSES.forEach(function(c){
+    var dates=(SEED.services&&SEED.services[c])||[], cl=DB.years[SEED.year][c];
+    dates.forEach(function(d){
+      if(!cl.services.some(function(s){return s.date===d})){
+        cl.services.push({id:uid(),date:d,grades:{}});
+      }
+    });
+  });
+  CLASSES.forEach(function(c){
+    var grp=(SEED.groups&&SEED.groups[c]); if(!grp) return;
+    var cl=DB.years[SEED.year][c];
+    cl.students.forEach(function(s){
+      if(s.group) return; // ne pas écraser un choix manuel
+      if((grp.A||[]).indexOf(s.name)!==-1) s.group='A';
+      else if((grp.B||[]).indexOf(s.name)!==-1) s.group='B';
+    });
+  });
+  DB.seedApplied=SEED.version;
+}
+
+/* ============ État ============ */
+var DB, state = {year:null, cls:'2PROR', view:'eval', serviceId:null, groupFilter:'all'};
+
+function init(){
+  var raw = loadRaw(), fresh=!raw;
+  if(raw){ try{ DB = JSON.parse(raw); }catch(e){ DB=null; fresh=true; } }
+  if(!DB || !DB.years){ DB = {years:{}}; fresh=true; }
+  applySeed(fresh);
+  // garde-fous
+  state.year = DB.currentYear && DB.years[DB.currentYear] ? DB.currentYear : Object.keys(DB.years)[0];
+  Object.keys(DB.years).forEach(function(y){
+    CLASSES.forEach(function(c){ if(!DB.years[y][c]) DB.years[y][c]=emptyClass(); });
+  });
+  var cy=DB.years[state.year];
+  if(cy['2PROR'].students.length===0 && cy['1PROR'].students.length>0) state.cls='1PROR';
+  save();
+}
+function curClass(){ return DB.years[state.year][state.cls]; }
+function classHasGroups(cls){ return cls.students.some(function(s){return s.group;}); }
+function filteredStudents(cls){
+  if(state.groupFilter==='all' || !classHasGroups(cls)) return cls.students;
+  return cls.students.filter(function(s){return s.group===state.groupFilter;});
+}
+function groupSuffix(){ return (state.groupFilter==='all')?'':' — Groupe '+state.groupFilter; }
+function groupFilterBar(cls){
+  if(!classHasGroups(cls)) return '';
+  function b(g,lbl){ return '<button class="tab gf-btn'+(state.groupFilter===g?' on':'')+'" data-group="'+g+'">'+lbl+'</button>'; }
+  return '<div class="seg gfseg">'+b('all','Tous')+b('A','Groupe A')+b('B','Groupe B')+'</div>';
+}
+
+/* ============ Calculs ============ */
+function scoreOfGrade(g){
+  if(!g||!g.c) return 0;
+  var t=0; CRITERIA.forEach(function(cr){ if(g.c[cr.id]) t+=cr.pts; });
+  return t;
+}
+function serviceScore(svc, studentId){ return scoreOfGrade(svc.grades[studentId]); }
+
+function isoWeekKey(dateStr){
+  var d=new Date(dateStr+'T00:00:00');
+  var t=new Date(d); t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+3-((t.getDay()+6)%7));
+  var week1=new Date(t.getFullYear(),0,4);
+  var w=1+Math.round(((t-week1)/86400000-3+((week1.getDay()+6)%7))/7);
+  return t.getFullYear()+'-S'+String(w).padStart(2,'0');
+}
+function frDate(dateStr){
+  try{ return new Date(dateStr+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}); }
+  catch(e){ return dateStr; }
+}
+function frShort(dateStr){
+  try{ return new Date(dateStr+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}); }
+  catch(e){ return dateStr; }
+}
+function round1(n){ return Math.round(n*10)/10; }
+
+/* semaines -> {key, services:[svc], range} triées par date desc */
+function weeksOf(cls){
+  var map={};
+  cls.services.forEach(function(s){
+    var k=isoWeekKey(s.date);
+    (map[k]=map[k]||[]).push(s);
+  });
+  var arr=Object.keys(map).map(function(k){
+    var svcs=map[k].slice().sort(function(a,b){return a.date<b.date?-1:1});
+    return {key:k, services:svcs};
+  });
+  arr.sort(function(a,b){ return a.services[0].date<b.services[0].date?-1:1; });
+  return arr;
+}
+function isAbsent(svc, studentId){ var g=svc.grades[studentId]; return !!(g&&g.absent); }
+/* poste(s) tenu(s) par l'élève lors de la semaine précédant le service courant */
+function prevWeekPostes(cls, curSvc, studentId){
+  var curKey=isoWeekKey(curSvc.date), prevKey=null;
+  cls.services.forEach(function(s){
+    var k=isoWeekKey(s.date);
+    if(k<curKey && (prevKey===null || k>prevKey)) prevKey=k;
+  });
+  var set={};
+  if(prevKey!==null){
+    cls.services.forEach(function(s){
+      if(isoWeekKey(s.date)!==prevKey) return;
+      var g=s.grades[studentId];
+      if(g && !g.absent && g.poste) set[g.poste]=true;
+    });
+  }
+  return set;
+}
+function posteBtnInner(poste){
+  return poste ? '<span class="dot" style="background:'+posteColor(poste)+'"></span>'+esc(poste) : '— poste —';
+}
+/* moyenne semaine = moyenne des services PRÉSENTS ; null si absent à tous */
+function weekAvg(week, studentId){
+  var sum=0,n=0;
+  week.services.forEach(function(s){
+    if(isAbsent(s,studentId)) return;     // absence exclue du calcul
+    sum+=serviceScore(s,studentId); n++;
+  });
+  return n?round1(sum/n):null;
+}
+
+/* ============ Rendu ============ */
+var viewEl=document.getElementById('view');
+
+function render(){
+  // header
+  renderYearSel();
+  renderClassTabs();
+  document.querySelectorAll('#viewTabs .tab').forEach(function(t){
+    t.classList.toggle('on', t.dataset.view===state.view);
+  });
+  if(state.view==='eval') renderEval();
+  else if(state.view==='history') renderHistory();
+  else if(state.view==='postes') renderPostes();
+  else renderStudents();
+}
+
+function renderYearSel(){
+  var sel=document.getElementById('yearSel');
+  var years=Object.keys(DB.years).sort().reverse();
+  sel.innerHTML=years.map(function(y){return '<option value="'+y+'"'+(y===state.year?' selected':'')+'>'+y+'</option>'}).join('');
+}
+function renderClassTabs(){
+  var box=document.getElementById('classTabs');
+  box.innerHTML=CLASSES.map(function(c){
+    var n=DB.years[state.year][c].students.length;
+    return '<button class="tab classtab '+(c===state.cls?'on':'')+'" data-cls="'+c+'">'+c+
+      ' <span style="opacity:.6;font-weight:500">· '+n+' élèves</span></button>';
+  }).join('');
+}
+
+/* ---------- Vue ÉVALUER ---------- */
+function renderEval(){
+  var cls=curClass();
+  if(cls.students.length===0){
+    viewEl.innerHTML=emptyBlock('Aucun élève dans cette classe','Ajoute d’abord la liste des élèves pour pouvoir les évaluer.',
+      '<button class="btn btn-primary" onclick="CARNET.go(\'students\')">Gérer les élèves</button>');
+    return;
+  }
+  // service courant : celui du moment (dernier service <= aujourd'hui, sinon le premier)
+  if(!cls.services.some(function(s){return s.id===state.serviceId})){
+    var asc=cls.services.slice().sort(function(a,b){return a.date<b.date?-1:1});
+    var today=new Date().toISOString().slice(0,10), pick=null;
+    asc.forEach(function(s){ if(s.date<=today) pick=s; });
+    if(!pick) pick=asc[0];
+    state.serviceId = pick ? pick.id : null;
+  }
+  var svcOptions = cls.services.slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(s){
+    return '<option value="'+s.id+'"'+(s.id===state.serviceId?' selected':'')+'>'+capit(frDate(s.date))+'</option>';
+  }).join('');
+
+  var html=groupFilterBar(cls)+'<div class="svc-bar">'+
+    '<span class="eyebrow">Service du</span>'+
+    (cls.services.length?'<select id="svcSel">'+svcOptions+'</select>':'')+
+    '<button class="btn btn-primary btn-sm" id="newSvcBtn">+ Nouveau service</button>';
+  if(state.serviceId){
+    html+='<button class="btn btn-ghost btn-sm" id="editSvcBtn">Modifier la date</button>'+
+          '<button class="btn btn-ghost btn-sm" id="printSvcBtn">Imprimer / PDF</button>'+
+          '<button class="btn btn-danger btn-sm" id="delSvcBtn">Supprimer</button>';
+  }
+  html+='</div>';
+
+  if(!state.serviceId){
+    viewEl.innerHTML=html+emptyBlock('Aucun service enregistré','Crée un service (une date) pour commencer à cocher les critères acquis par chaque élève.','');
+    bindEvalBars(cls);
+    return;
+  }
+
+  var svc=cls.services.filter(function(s){return s.id===state.serviceId})[0];
+  // entêtes
+  var thead='<tr><th class="col-name">Élève</th><th class="crit poste-col">Poste</th><th class="crit abs-col">Absent</th>';
+  CRITERIA.forEach(function(cr){ thead+='<th class="crit">'+cr.short+'<span class="pp">'+cr.pts+' pt'+(cr.pts>1?'s':'')+'</span></th>'; });
+  thead+='<th class="note-cell">Note /20</th><th>Comm.</th></tr>';
+
+  var rows = filteredStudents(cls).map(function(st,i){
+    return rowHTML(svc, st, i);
+  }).join('');
+
+  html+='<div class="grid-wrap"><table class="grid"><thead>'+thead+'</thead><tbody>'+rows+'</tbody></table></div>';
+
+  // légende
+  html+='<div class="legend">'+CRITERIA.map(function(cr){
+    return '<span><b>'+cr.short+'</b> ('+cr.pts+') — '+cr.desc+'</span>';
+  }).join('')+'</div>';
+  html+='<div class="bands">'+
+    '<span class="b-exc">17–20 : Excellent</span>'+
+    '<span class="b-tres">14–16 : Très satisfaisant</span>'+
+    '<span class="b-sat">10–13 : Satisfaisant</span>'+
+    '<span class="b-faible">&lt;10 : À renforcer</span></div>';
+  html+='<p class="hint-line" style="margin-top:10px">Astuce : glisse le doigt horizontalement sur une ligne pour cocher (ou décocher) plusieurs critères d’un coup. Pour faire défiler le tableau, glisse depuis la colonne des noms.</p>';
+
+  viewEl.innerHTML=html;
+  bindEvalBars(cls);
+  bindGrid(svc);
+  bindSwipe(svc);
+}
+
+function rowHTML(svc, st, i){
+  var g=svc.grades[st.id]||(svc.grades[st.id]={c:{},comment:'',absent:false,poste:''});
+  var absent=!!g.absent;
+  var prevSet=prevWeekPostes(curClass(), svc, st.id);
+  var repeat=g.poste && prevSet[g.poste];
+  var posteCell='<td class="crit poste-col"><button class="poste-btn'+(g.poste?' set':'')+(repeat?' repeat':'')+'" data-poste="'+st.id+'">'+posteBtnInner(g.poste)+'</button></td>';
+  var absCell='<td class="crit abs-col"><button class="abs-btn'+(absent?' on':'')+'" data-abs="'+st.id+'">'+(absent?'ABS':'—')+'</button></td>';
+  var cells=CRITERIA.map(function(cr){
+    var on=!!g.c[cr.id];
+    return '<td class="crit"><button class="cell'+(on?' on':'')+(absent?' off':'')+'" data-pts="+'+cr.pts+'" data-stu="'+st.id+'" data-cr="'+cr.id+'" aria-label="'+cr.label+'"'+(absent?' disabled':'')+'></button></td>';
+  }).join('');
+  var note=scoreOfGrade(g), ap=appreciation(note);
+  var noteCell = absent
+    ? '<span class="note-badge b-abs" data-note>Abs</span>'
+    : '<span class="note-badge '+ap.cls+'" data-note>'+note+'<small>/'+MAX+'</small></span>';
+  var hasC=g.comment&&g.comment.trim();
+  return '<tr data-stu="'+st.id+'"'+(absent?' class="row-abs"':'')+'>'+
+    '<td class="col-name"><span class="nm">'+(i+1)+'. '+esc(st.name)+(st.group?' <span class="grp-chip">'+st.group+'</span>':'')+'</span></td>'+
+    posteCell+absCell+cells+
+    '<td class="note-cell">'+noteCell+'</td>'+
+    '<td><button class="cmt-btn'+(hasC?' has':'')+'" data-cmt="'+st.id+'">✎</button></td>'+
+  '</tr>';
+}
+
+function bindEvalBars(cls){
+  var ss=document.getElementById('svcSel');
+  if(ss) ss.onchange=function(){ state.serviceId=this.value; renderEval(); };
+  var nb=document.getElementById('newSvcBtn'); if(nb) nb.onclick=function(){ newServiceModal(cls); };
+  var eb=document.getElementById('editSvcBtn'); if(eb) eb.onclick=function(){ editServiceModal(cls); };
+  var pb=document.getElementById('printSvcBtn'); if(pb) pb.onclick=function(){ printService(cls); };
+  var db=document.getElementById('delSvcBtn'); if(db) db.onclick=function(){ delService(cls); };
+}
+
+function updateNote(tr,g){
+  var badge=tr.querySelector('[data-note]');
+  if(g.absent){ badge.className='note-badge b-abs'; badge.textContent='Abs'; return; }
+  var note=scoreOfGrade(g), ap=appreciation(note);
+  badge.className='note-badge '+ap.cls; badge.innerHTML=note+'<small>/'+MAX+'</small>';
+}
+function bindRow(svc, tr){
+  tr.querySelectorAll('.cell').forEach(function(btn){
+    btn.onclick=function(){
+      if(btn.disabled || swipeJustPainted) return;
+      var g=svc.grades[btn.dataset.stu]||(svc.grades[btn.dataset.stu]={c:{},comment:'',absent:false});
+      g.c[btn.dataset.cr]=!g.c[btn.dataset.cr];
+      btn.classList.toggle('on', g.c[btn.dataset.cr]);
+      updateNote(tr,g); save();
+    };
+  });
+  var ab=tr.querySelector('.abs-btn');
+  if(ab) ab.onclick=function(){
+    var stu=ab.dataset.abs;
+    var g=svc.grades[stu]||(svc.grades[stu]={c:{},comment:'',absent:false});
+    g.absent=!g.absent; save();
+    var idx=Array.prototype.indexOf.call(tr.parentNode.children, tr);
+    var st=curClass().students.filter(function(s){return s.id===stu})[0];
+    var tmp=document.createElement('tbody'); tmp.innerHTML=rowHTML(svc, st, idx);
+    var ntr=tmp.firstChild; tr.parentNode.replaceChild(ntr, tr); bindRow(svc, ntr);
+  };
+  var pbn=tr.querySelector('.poste-btn');
+  if(pbn) pbn.onclick=function(){ postePickerModal(svc, pbn.dataset.poste); };
+  var cb=tr.querySelector('.cmt-btn');
+  if(cb) cb.onclick=function(){ commentModal(svc, cb.dataset.cmt); };
+}
+function bindGrid(svc){
+  viewEl.querySelectorAll('tbody tr[data-stu]').forEach(function(tr){ bindRow(svc, tr); });
+}
+var swipeJustPainted=false;
+function bindSwipe(svc){
+  var wrap=viewEl.querySelector('.grid-wrap'); if(!wrap) return;
+  var table=wrap.querySelector('table.grid'); if(!table) return;
+  var start=null, painted=null, didPaint=false;
+
+  function cellAt(x,y){
+    var el=document.elementFromPoint(x,y);
+    var c=el&&el.closest?el.closest('.cell'):null;
+    if(!c || c.classList.contains('off') || c.disabled) return null;
+    return c;
+  }
+  function applyCell(c,on){
+    var stu=c.getAttribute('data-stu'), cr=c.getAttribute('data-cr');
+    var g=svc.grades[stu]||(svc.grades[stu]={c:{},comment:'',absent:false,poste:''});
+    g.c[cr]=on; c.classList.toggle('on',on);
+    updateNote(c.closest('tr'), g);
+  }
+  table.addEventListener('touchstart', function(e){
+    if(e.touches.length!==1){ start=null; return; }
+    var t=e.touches[0], c=cellAt(t.clientX,t.clientY);
+    if(!c){ start=null; return; }
+    start={x:t.clientX,y:t.clientY,row:c.closest('tr'),cell:c,onStart:c.classList.contains('on'),decided:false,painting:false,target:false};
+    painted=Object.create(null); didPaint=false;
+  }, {passive:true});
+  table.addEventListener('touchmove', function(e){
+    if(!start || e.touches.length!==1) return;
+    var t=e.touches[0];
+    if(!start.decided){
+      var dx=Math.abs(t.clientX-start.x), dy=Math.abs(t.clientY-start.y);
+      if(dx<8 && dy<8) return;
+      if(dy>=dx){ start=null; return; }      // geste vertical -> défilement normal
+      start.decided=true; start.painting=true; start.target=!start.onStart;
+      applyCell(start.cell, start.target); painted[start.cell.getAttribute('data-cr')]=true; didPaint=true;
+    }
+    if(start.painting){
+      e.preventDefault();                     // bloque le défilement horizontal pendant la peinture
+      var c=cellAt(t.clientX,t.clientY);
+      if(c && c.closest('tr')===start.row){
+        var k=c.getAttribute('data-cr');
+        if(!painted[k]){ applyCell(c, start.target); painted[k]=true; }
+      }
+    }
+  }, {passive:false});
+  function end(){
+    if(start && start.painting) save();
+    if(didPaint){ swipeJustPainted=true; setTimeout(function(){ swipeJustPainted=false; }, 400); }
+    start=null;
+  }
+  table.addEventListener('touchend', end);
+  table.addEventListener('touchcancel', end);
+}
+
+/* ---------- Vue HISTORIQUE ---------- */
+function renderHistory(){
+  var cls=curClass();
+  if(cls.services.length===0){
+    viewEl.innerHTML=emptyBlock('Pas encore d’historique','Les services notés apparaîtront ici, regroupés par semaine avec la moyenne de chaque élève.','');
+    return;
+  }
+  var weeks=weeksOf(cls);
+  var html='<div class="row-between"><div><div class="eyebrow">'+state.cls+' · '+state.year+'</div><h2 class="title-lg">Historique par semaine</h2></div>'+
+    '<button class="btn btn-ghost btn-sm" id="printYearBtn">Imprimer le bilan annuel</button></div>';
+  html+=groupFilterBar(cls);
+
+  weeks.forEach(function(wk){
+    var tags=wk.services.map(function(s){return capit(frShort(s.date))}).join(' · ');
+    var rows=filteredStudents(cls).map(function(st,i){
+      var perSvc=wk.services.map(function(s){
+        if(isAbsent(s,st.id)) return '<td><span class="mini-note" style="color:var(--muted)">Abs</span></td>';
+        var sc=serviceScore(s,st.id); var ap=appreciation(sc);
+        return '<td><span class="mini-note" style="color:var(--'+ap.band+')">'+sc+'</span></td>';
+      }).join('');
+      var avg=weekAvg(wk,st.id);
+      var avgCell = (avg===null)
+        ? '<span class="note-badge b-abs" style="min-width:54px;font-size:14px">Abs</span>'
+        : '<span class="note-badge '+appreciation(avg).cls+'" style="min-width:54px;font-size:16px">'+avg+'</span>';
+      return '<tr><td class="name">'+(i+1)+'. '+esc(st.name)+'</td>'+perSvc+
+        '<td>'+avgCell+'</td></tr>';
+    }).join('');
+    var svcHeads=wk.services.map(function(s){return '<th>'+capit(frShort(s.date))+'</th>'}).join('');
+    html+='<div class="card week-card">'+
+      '<div class="week-head"><div><h3>Semaine '+wk.key.split('-S')[1]+'</h3><div class="svc-tags">'+tags+'</div></div>'+
+      '<button class="btn btn-ghost btn-sm" data-printweek="'+wk.key+'">Imprimer cette semaine</button></div>'+
+      '<table class="summary"><thead><tr><th style="text-align:left">Élève</th>'+svcHeads+'<th>Moyenne /20</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  });
+  viewEl.innerHTML=html;
+  var py=document.getElementById('printYearBtn'); if(py) py.onclick=function(){ printYear(cls,weeks); };
+  viewEl.querySelectorAll('[data-printweek]').forEach(function(b){
+    b.onclick=function(){ var k=this.dataset.printweek; printWeek(cls, weeksOf(cls).filter(function(w){return w.key===k})[0]); };
+  });
+}
+
+/* ---------- Vue POSTES ---------- */
+function pchip(poste){
+  if(!poste) return '<span class="pchip empty">·</span>';
+  return '<span class="pchip" style="background:'+posteColor(poste)+'" title="'+esc(poste)+'">'+posteCode(poste)+'</span>';
+}
+function posteLegend(){
+  return '<div class="plegend">'+POSTES.map(function(p){
+    return '<span><span class="pchip" style="background:'+posteColor(p)+'">'+posteCode(p)+'</span> '+esc(p)+'</span>';
+  }).join('')+'</div>';
+}
+function renderPostes(){
+  var cls=curClass();
+  if(cls.students.length===0){
+    viewEl.innerHTML=emptyBlock('Aucun élève','Ajoute la liste des élèves pour suivre la rotation des postes.','');
+    return;
+  }
+  if(cls.services.length===0){
+    viewEl.innerHTML=emptyBlock('Aucun service','Les postes tenus à chaque service s’afficheront ici, avec le récap pour faire tourner les rôles.','');
+    return;
+  }
+  var svcs=cls.services.slice().sort(function(a,b){return a.date<b.date?-1:1});
+
+  var html='<div class="row-between"><div><div class="eyebrow">'+state.cls+' · '+state.year+'</div>'+
+    '<h2 class="title-lg">Rotation des postes</h2></div>'+
+    '<button class="btn btn-ghost btn-sm" id="printPostesBtn">Imprimer / PDF</button></div>';
+
+  html+=posteLegend();
+  html+=groupFilterBar(cls);
+
+  /* --- Tableau 1 : poste tenu à chaque service --- */
+  var head1='<tr><th class="col-name">Élève</th>'+svcs.map(function(s){
+    return '<th class="svc-head">'+capit(frShort(s.date))+'</th>';
+  }).join('')+'</tr>';
+  var rows1=filteredStudents(cls).map(function(st,i){
+    var tds=svcs.map(function(s){
+      var g=s.grades[st.id];
+      if(g&&g.absent) return '<td><span class="pchip abs">Abs</span></td>';
+      return '<td>'+pchip(g&&g.poste?g.poste:'')+'</td>';
+    }).join('');
+    return '<tr><td class="col-name"><span class="nm">'+(i+1)+'. '+esc(st.name)+'</span></td>'+tds+'</tr>';
+  }).join('');
+  html+='<h3 class="sub-h">Poste tenu à chaque service</h3>'+
+    '<div class="grid-wrap"><table class="grid pgrid"><thead>'+head1+'</thead><tbody>'+rows1+'</tbody></table></div>';
+
+  /* --- Tableau 2 : répartition (nb de fois par poste) --- */
+  var head2='<tr><th class="col-name">Élève</th>'+POSTES.map(function(p){
+    return '<th class="crit" title="'+esc(p)+'"><span class="pchip" style="background:'+posteColor(p)+'">'+posteCode(p)+'</span></th>';
+  }).join('')+'<th class="crit">Variété</th><th class="crit">Présent</th></tr>';
+  var rows2=filteredStudents(cls).map(function(st,i){
+    var counts={}; POSTES.forEach(function(p){counts[p]=0}); var attended=0;
+    svcs.forEach(function(s){
+      var g=s.grades[st.id];
+      if(g&&g.absent) return;
+      attended++;
+      if(g&&g.poste) counts[g.poste]++;
+    });
+    var distinct=POSTES.filter(function(p){return counts[p]>0}).length;
+    var tds=POSTES.map(function(p){
+      var n=counts[p];
+      return '<td class="cnt-cell'+(n===0?' zero-cell':'')+'">'+(n===0?'<span class="cnt zero">·</span>':'<span class="cnt">'+n+'</span>')+'</td>';
+    }).join('');
+    return '<tr><td class="col-name"><span class="nm">'+(i+1)+'. '+esc(st.name)+'</span></td>'+tds+
+      '<td class="cnt-cell"><b>'+distinct+'</b>/'+POSTES.length+'</td>'+
+      '<td class="cnt-cell">'+attended+'</td></tr>';
+  }).join('');
+  html+='<h3 class="sub-h">Répartition — nombre de fois par poste</h3>'+
+    '<p class="hint-line">Les cases vides (·) sont les postes que l’élève n’a pas encore tenus : idéal pour équilibrer la rotation.</p>'+
+    '<div class="grid-wrap"><table class="grid pgrid"><thead>'+head2+'</thead><tbody>'+rows2+'</tbody></table></div>';
+
+  viewEl.innerHTML=html;
+  var pb=document.getElementById('printPostesBtn'); if(pb) pb.onclick=function(){ printPostes(cls,svcs); };
+}
+
+/* ---------- Vue ÉLÈVES ---------- */
+function renderStudents(){
+  var cls=curClass();
+  var html='<div class="row-between"><div><div class="eyebrow">'+state.cls+' · '+state.year+'</div><h2 class="title-lg">Liste des élèves</h2></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+    '<button class="btn btn-ghost btn-sm" id="pasteBtn">Coller une liste</button>'+
+    '<button class="btn btn-primary btn-sm" id="addStuBtn">+ Ajouter un élève</button></div></div>';
+
+  if(cls.students.length===0){
+    html+=emptyBlock('Classe vide','Ajoute les élèves un par un, ou colle ta liste complète (un nom par ligne) d’un seul coup.',
+      '<button class="btn btn-primary" id="pasteBtn2">Coller la liste des élèves</button>');
+  }else{
+    html+='<div class="stu-list">'+cls.students.map(function(st,i){
+      return '<div class="stu-row" data-stu="'+st.id+'">'+
+        '<span class="num">'+(i+1)+'</span>'+
+        '<span class="name">'+esc(st.name)+'</span>'+
+        '<span class="grp-ctrl">'+
+          '<button class="grp-set'+(st.group==='A'?' on':'')+'" data-grp="A" data-stu="'+st.id+'">A</button>'+
+          '<button class="grp-set'+(st.group==='B'?' on':'')+'" data-grp="B" data-stu="'+st.id+'">B</button>'+
+        '</span>'+
+        '<button class="btn-ghost btn-sm" data-edit="'+st.id+'">Renommer</button>'+
+        '<button class="btn-danger btn-sm" data-del="'+st.id+'">Retirer</button>'+
+      '</div>';
+    }).join('')+'</div>'+
+    '<p class="hint-line" style="margin-top:10px">Touche A ou B pour affecter un élève à un groupe (re-toucher le groupe actif l’enlève).</p>';
+  }
+  viewEl.innerHTML=html;
+  ['addStuBtn'].forEach(function(){});
+  var a=document.getElementById('addStuBtn'); if(a) a.onclick=function(){ addStudentModal(cls); };
+  [document.getElementById('pasteBtn'),document.getElementById('pasteBtn2')].forEach(function(b){ if(b) b.onclick=function(){ pasteModal(cls); }; });
+  viewEl.querySelectorAll('[data-del]').forEach(function(b){ b.onclick=function(){ delStudent(cls,this.dataset.del); }; });
+  viewEl.querySelectorAll('[data-edit]').forEach(function(b){ b.onclick=function(){ editStudentInline(cls,this.dataset.edit); }; });
+  viewEl.querySelectorAll('[data-grp]').forEach(function(b){ b.onclick=function(){
+    var st=cls.students.filter(function(s){return s.id===b.dataset.stu})[0];
+    st.group=(st.group===b.dataset.grp)?'':b.dataset.grp; save(); renderStudents();
+  }; });
+}
+
+/* ============ Modales ============ */
+var overlay=document.getElementById('overlay'), modal=document.getElementById('modal');
+function openModal(html){ modal.innerHTML=html; overlay.classList.add('show'); }
+function closeModal(){ overlay.classList.remove('show'); }
+overlay.addEventListener('click',function(e){ if(e.target===overlay) closeModal(); });
+
+function addStudentModal(cls){
+  openModal('<h2>Ajouter un élève</h2><p class="hint">Nom et prénom de l’élève.</p>'+
+    '<input type="text" id="m_name" placeholder="Ex. Dupont Léa" autocomplete="off">'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Ajouter</button></div>');
+  var inp=document.getElementById('m_name'); inp.focus();
+  function go(){ var v=inp.value.trim(); if(!v) return; cls.students.push({id:uid(),name:v}); save(); closeModal(); render(); toast('Élève ajouté'); }
+  document.getElementById('m_ok').onclick=go;
+  inp.onkeydown=function(e){ if(e.key==='Enter') go(); };
+}
+function pasteModal(cls){
+  openModal('<h2>Coller la liste</h2><p class="hint">Un élève par ligne (copie depuis Pronote, un tableur, etc.). Les lignes vides sont ignorées.</p>'+
+    '<textarea id="m_paste" placeholder="Dupont Léa\nMartin Hugo\nBernard Inès"></textarea>'+
+    '<label><input type="checkbox" id="m_replace"> Remplacer la liste actuelle ('+cls.students.length+' élèves)</label>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Importer</button></div>');
+  document.getElementById('m_paste').focus();
+  document.getElementById('m_ok').onclick=function(){
+    var lines=document.getElementById('m_paste').value.split('\n').map(function(s){return s.trim()}).filter(Boolean);
+    if(!lines.length) return;
+    if(document.getElementById('m_replace').checked) cls.students=[];
+    lines.forEach(function(n){ cls.students.push({id:uid(),name:n}); });
+    save(); closeModal(); render(); toast(lines.length+' élève(s) importé(s)');
+  };
+}
+function editStudentInline(cls,id){
+  renderStudents();
+  var row=viewEl.querySelector('.stu-row[data-stu="'+id+'"]');
+  var st=cls.students.filter(function(s){return s.id===id})[0];
+  row.querySelector('.name').outerHTML='<input class="editname" type="text" value="'+esc(st.name)+'">';
+  var inp=row.querySelector('.editname'); inp.focus(); inp.setSelectionRange(inp.value.length,inp.value.length);
+  function save2(){ var v=inp.value.trim(); if(v){ st.name=v; save(); } render(); }
+  inp.onkeydown=function(e){ if(e.key==='Enter') save2(); };
+  inp.onblur=save2;
+}
+function delStudent(cls,id){
+  var st=cls.students.filter(function(s){return s.id===id})[0];
+  openModal('<h2>Retirer cet élève ?</h2><p class="hint"><b>'+esc(st.name)+'</b> sera retiré de la classe. Ses notes déjà enregistrées dans les services seront aussi supprimées.</p>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-danger" id="m_ok">Retirer</button></div>');
+  document.getElementById('m_ok').onclick=function(){
+    cls.students=cls.students.filter(function(s){return s.id!==id});
+    cls.services.forEach(function(svc){ delete svc.grades[id]; });
+    save(); closeModal(); render(); toast('Élève retiré');
+  };
+}
+
+function newServiceModal(cls){
+  var today=new Date().toISOString().slice(0,10);
+  openModal('<h2>Nouveau service</h2><p class="hint">Choisis la date du service. Les services de la même semaine seront automatiquement moyennés dans l’historique.</p>'+
+    '<label>Date du service</label><input type="date" id="m_date" value="'+today+'">'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Créer le service</button></div>');
+  document.getElementById('m_ok').onclick=function(){
+    var d=document.getElementById('m_date').value; if(!d) return;
+    var s={id:uid(),date:d,grades:{}}; cls.services.push(s); state.serviceId=s.id;
+    save(); closeModal(); renderEval(); toast('Service créé');
+  };
+}
+function editServiceModal(cls){
+  var svc=cls.services.filter(function(s){return s.id===state.serviceId})[0];
+  openModal('<h2>Modifier la date</h2>'+
+    '<label>Date du service</label><input type="date" id="m_date" value="'+svc.date+'">'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Enregistrer</button></div>');
+  document.getElementById('m_ok').onclick=function(){
+    var d=document.getElementById('m_date').value; if(!d) return;
+    svc.date=d; save(); closeModal(); renderEval(); toast('Date modifiée');
+  };
+}
+function delService(cls){
+  var svc=cls.services.filter(function(s){return s.id===state.serviceId})[0];
+  openModal('<h2>Supprimer ce service ?</h2><p class="hint">Le service du <b>'+capit(frDate(svc.date))+'</b> et toutes les notes associées seront supprimés. Action définitive.</p>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-danger" id="m_ok">Supprimer</button></div>');
+  document.getElementById('m_ok').onclick=function(){
+    cls.services=cls.services.filter(function(s){return s.id!==state.serviceId});
+    state.serviceId=null; save(); closeModal(); renderEval(); toast('Service supprimé');
+  };
+}
+function refreshPosteBtn(stuId, svc){
+  var tr=viewEl.querySelector('tr[data-stu="'+stuId+'"]'); if(!tr) return;
+  var btn=tr.querySelector('.poste-btn'); if(!btn) return;
+  var g=svc.grades[stuId]||{poste:''};
+  var prev=prevWeekPostes(curClass(), svc, stuId);
+  var repeat=g.poste && prev[g.poste];
+  btn.className='poste-btn'+(g.poste?' set':'')+(repeat?' repeat':'');
+  btn.innerHTML=posteBtnInner(g.poste);
+}
+function postePickerModal(svc, stuId){
+  var cls=curClass();
+  var st=cls.students.filter(function(s){return s.id===stuId})[0];
+  var g=svc.grades[stuId]||(svc.grades[stuId]={c:{},comment:'',absent:false,poste:''});
+  var prev=prevWeekPostes(cls, svc, stuId);
+  var prevList=Object.keys(prev);
+  var hint = prevList.length
+    ? '<p class="hint">Semaine précédente : '+prevList.map(function(p){return '<span class="prev-tag">'+esc(p)+'</span>'}).join(' ')+' — <b style="color:var(--faible)">à éviter</b> pour faire tourner les postes.</p>'
+    : '<p class="hint">Choisis le poste tenu par '+esc(st.name)+' pour ce service.</p>';
+  var opts=POSTES.map(function(p){
+    var isPrev=!!prev[p], isSel=(g.poste===p);
+    return '<button class="poste-opt'+(isPrev?' prev':'')+(isSel?' sel':'')+'" data-p="'+esc(p)+'">'+
+      '<span class="dot" style="background:'+posteColor(p)+'"></span>'+
+      '<span class="opt-label">'+esc(p)+'</span>'+
+      (isPrev?'<span class="prev-badge">sem. dernière</span>':'')+
+      (isSel?'<span class="sel-badge">✓</span>':'')+'</button>';
+  }).join('');
+  openModal('<h2>Poste — '+esc(st.name)+'</h2>'+hint+
+    '<div class="poste-opts">'+opts+'</div>'+
+    '<div class="modal-actions"><button class="btn btn-danger btn-sm" id="p_clear">Retirer le poste</button>'+
+    '<button class="btn btn-ghost btn-sm" onclick="CARNET.close()">Fermer</button></div>');
+  modal.querySelectorAll('.poste-opt').forEach(function(b){
+    b.onclick=function(){ g.poste=b.dataset.p; save(); closeModal(); refreshPosteBtn(stuId, svc); };
+  });
+  document.getElementById('p_clear').onclick=function(){ g.poste=''; save(); closeModal(); refreshPosteBtn(stuId, svc); };
+}
+function commentModal(svc, stuId){
+  var g=svc.grades[stuId]||(svc.grades[stuId]={c:{},comment:''});
+  var st=curClass().students.filter(function(s){return s.id===stuId})[0];
+  openModal('<h2>Commentaire</h2><p class="hint">Note libre pour <span class="cmt-name">'+esc(st.name)+'</span> — service du '+frDate(svc.date)+'.</p>'+
+    '<textarea id="m_cmt" placeholder="Ex. Très bon contact client, doit soigner le débarrassage.">'+esc(g.comment||'')+'</textarea>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Enregistrer</button></div>');
+  document.getElementById('m_cmt').focus();
+  document.getElementById('m_ok').onclick=function(){
+    g.comment=document.getElementById('m_cmt').value; save(); closeModal(); renderEval();
+  };
+}
+function addYearModal(){
+  var d=new Date(), y=d.getFullYear();
+  var suggest=(y)+'-'+(y+1);
+  openModal('<h2>Nouvelle année scolaire</h2><p class="hint">Crée une nouvelle année (les classes repartent à vide). Tu pourras basculer entre les années à tout moment.</p>'+
+    '<label>Libellé</label><input type="text" id="m_year" value="'+suggest+'">'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Annuler</button>'+
+    '<button class="btn btn-primary" id="m_ok">Créer</button></div>');
+  document.getElementById('m_ok').onclick=function(){
+    var v=document.getElementById('m_year').value.trim(); if(!v) return;
+    if(!DB.years[v]) DB.years[v]=emptyYear();
+    DB.currentYear=v; state.year=v; state.serviceId=null; save(); closeModal(); render(); toast('Année créée');
+  };
+}
+function dataModal(){
+  var warn = storageOK ? '' : '<p class="hint" style="color:var(--faible)">⚠ La sauvegarde automatique n’est pas disponible ici (aperçu). Sur ta tablette, ouvre le fichier directement : les données seront alors gardées. Pense à exporter régulièrement en sécurité.</p>';
+  openModal('<h2>Sauvegarde des données</h2>'+
+    '<p class="hint">Les notes sont enregistrées sur cet appareil, dans ce navigateur. Exporte un fichier de sauvegarde pour les protéger ou les transférer sur un autre appareil.</p>'+warn+
+    '<div class="modal-actions" style="justify-content:flex-start">'+
+    '<button class="btn btn-primary" id="m_export">Exporter une sauvegarde</button>'+
+    '<button class="btn btn-ghost" id="m_import">Importer une sauvegarde</button></div>'+
+    '<input type="file" id="m_file" accept="application/json" style="display:none">'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Fermer</button></div>');
+  document.getElementById('m_export').onclick=function(){
+    var blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='carnet-service-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  };
+  var fi=document.getElementById('m_file');
+  document.getElementById('m_import').onclick=function(){ fi.click(); };
+  fi.onchange=function(){
+    var f=fi.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(){ try{ var d=JSON.parse(r.result); if(d&&d.years){ DB=d; init2AfterImport(); closeModal(); toast('Sauvegarde importée'); } else toast('Fichier invalide'); }catch(e){ toast('Fichier illisible'); } };
+    r.readAsText(f);
+  };
+}
+function init2AfterImport(){
+  Object.keys(DB.years).forEach(function(y){ CLASSES.forEach(function(c){ if(!DB.years[y][c]) DB.years[y][c]=emptyClass(); }); });
+  state.year=DB.currentYear&&DB.years[DB.currentYear]?DB.currentYear:Object.keys(DB.years)[0];
+  state.serviceId=null; save(); render();
+}
+
+/* ============ Impression ============ */
+var printArea=document.getElementById('print-area');
+function footer(){ return '<div class="pr-foot"><span>Carnet de Service — '+state.cls+' · '+state.year+'</span><span>Édité le '+new Date().toLocaleDateString('fr-FR')+'</span></div>'; }
+function critHeads(){ return CRITERIA.map(function(c){return '<th>'+c.short+'<br><small>'+c.pts+'</small></th>'}).join(''); }
+
+function printService(cls){
+  var svc=cls.services.filter(function(s){return s.id===state.serviceId})[0];
+  var rows=filteredStudents(cls).map(function(st,i){
+    var g=svc.grades[st.id]||{c:{},comment:'',absent:false,poste:''};
+    var poste='<td class="l">'+esc(g.poste||'')+'</td>';
+    if(g.absent){
+      var blanks=CRITERIA.map(function(){return '<td>–</td>'}).join('');
+      return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+poste+blanks+'<td><b>Abs</b></td><td class="l">'+esc(g.comment||'')+'</td></tr>';
+    }
+    var cells=CRITERIA.map(function(c){return '<td>'+(g.c[c.id]?c.pts:'·')+'</td>'}).join('');
+    var note=scoreOfGrade(g);
+    return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+poste+cells+'<td><b>'+note+'</b></td><td class="l">'+esc(g.comment||'')+'</td></tr>';
+  }).join('');
+  printArea.innerHTML='<div class="pr-title">'+state.cls+groupSuffix()+' — Service du '+frDate(svc.date)+'</div>'+
+    '<div class="pr-sub">Évaluation sur '+MAX+' points · une case = critère acquis</div>'+
+    '<table class="pr-table"><thead><tr><th class="l">Élève</th><th class="l">Poste</th>'+critHeads()+'<th>/20</th><th class="l">Commentaire</th></tr></thead><tbody>'+rows+'</tbody></table>'+footer();
+  doPrint();
+}
+function printWeek(cls,wk){
+  var svcHeads=wk.services.map(function(s){return '<th>'+capit(frShort(s.date))+'</th>'}).join('');
+  var rows=filteredStudents(cls).map(function(st,i){
+    var per=wk.services.map(function(s){return '<td>'+(isAbsent(s,st.id)?'Abs':serviceScore(s,st.id))+'</td>'}).join('');
+    var avg=weekAvg(wk,st.id);
+    var note=(avg===null)?'Abs':avg, txt=(avg===null)?'Absent sur la semaine':appreciation(avg).txt;
+    return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+per+'<td><b>'+note+'</b></td><td class="l">'+txt+'</td></tr>';
+  }).join('');
+  printArea.innerHTML='<div class="pr-title">'+state.cls+groupSuffix()+' — Semaine '+wk.key.split('-S')[1]+'</div>'+
+    '<div class="pr-sub">Moyenne des services de la semaine · '+state.year+'</div>'+
+    '<table class="pr-table"><thead><tr><th class="l">Élève</th>'+svcHeads+'<th>Moyenne /20</th><th class="l">Appréciation</th></tr></thead><tbody>'+rows+'</tbody></table>'+footer();
+  doPrint();
+}
+function printYear(cls,weeks){
+  var weekHeads=weeks.map(function(w){return '<th>S'+w.key.split('-S')[1]+'</th>'}).join('');
+  var rows=filteredStudents(cls).map(function(st,i){
+    var per=weeks.map(function(w){var a=weekAvg(w,st.id);return '<td>'+(a===null?'Abs':a)+'</td>'}).join('');
+    var vals=weeks.map(function(w){return weekAvg(w,st.id)}).filter(function(v){return v!==null});
+    var gen=vals.length?round1(vals.reduce(function(a,b){return a+b},0)/vals.length):null;
+    var note=(gen===null)?'—':gen, txt=(gen===null)?'Aucun service noté':appreciation(gen).txt;
+    return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+per+'<td><b>'+note+'</b></td><td class="l">'+txt+'</td></tr>';
+  }).join('');
+  printArea.innerHTML='<div class="pr-title">'+state.cls+groupSuffix()+' — Bilan '+state.year+'</div>'+
+    '<div class="pr-sub">Moyenne par semaine et moyenne générale /20</div>'+
+    '<table class="pr-table"><thead><tr><th class="l">Élève</th>'+weekHeads+'<th>Générale /20</th><th class="l">Appréciation</th></tr></thead><tbody>'+rows+'</tbody></table>'+footer();
+  doPrint();
+}
+function printPostes(cls,svcs){
+  // Tableau répartition
+  var head='<tr><th class="l">Élève</th>'+POSTES.map(function(p){return '<th>'+posteCode(p)+'</th>'}).join('')+'<th>Variété</th><th>Présent</th></tr>';
+  var rows=filteredStudents(cls).map(function(st,i){
+    var counts={}; POSTES.forEach(function(p){counts[p]=0}); var attended=0;
+    svcs.forEach(function(s){ var g=s.grades[st.id]; if(g&&g.absent) return; attended++; if(g&&g.poste) counts[g.poste]++; });
+    var distinct=POSTES.filter(function(p){return counts[p]>0}).length;
+    var tds=POSTES.map(function(p){return '<td>'+(counts[p]||'·')+'</td>'}).join('');
+    return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+tds+'<td><b>'+distinct+'</b>/'+POSTES.length+'</td><td>'+attended+'</td></tr>';
+  }).join('');
+  // Détail par service
+  var head2='<tr><th class="l">Élève</th>'+svcs.map(function(s){return '<th>'+capit(frShort(s.date))+'</th>'}).join('')+'</tr>';
+  var rows2=filteredStudents(cls).map(function(st,i){
+    var tds=svcs.map(function(s){ var g=s.grades[st.id]; if(g&&g.absent) return '<td>Abs</td>'; return '<td>'+(g&&g.poste?posteCode(g.poste):'·')+'</td>'; }).join('');
+    return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+tds+'</tr>';
+  }).join('');
+  var legend='<div class="pr-legend">'+POSTES.map(function(p){return '<span><b>'+posteCode(p)+'</b> = '+esc(p)+'</span>'}).join(' · ')+'</div>';
+  printArea.innerHTML='<div class="pr-title">'+state.cls+groupSuffix()+' — Rotation des postes</div>'+
+    '<div class="pr-sub">'+state.year+' · répartition et détail par service</div>'+legend+
+    '<table class="pr-table"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="height:14px"></div>'+
+    '<table class="pr-table"><thead>'+head2+'</thead><tbody>'+rows2+'</tbody></table>'+footer();
+  doPrint();
+}
+function doPrint(){ window.print(); }
+
+/* ============ Utilitaires ============ */
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); }
+function capit(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function emptyBlock(title,txt,btn){ return '<div class="card empty"><h3>'+title+'</h3><p>'+txt+'</p>'+(btn||'')+'</div>'; }
+var toastEl=document.getElementById('toast'),toastT;
+function toast(m){ toastEl.textContent=m; toastEl.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){toastEl.classList.remove('show')},1800); }
+
+/* ============ Events globaux ============ */
+document.getElementById('yearSel').onchange=function(){ state.year=this.value; DB.currentYear=this.value; state.serviceId=null; save(); render(); };
+document.getElementById('addYearBtn').onclick=addYearModal;
+document.getElementById('dataBtn').onclick=dataModal;
+document.getElementById('classTabs').addEventListener('click',function(e){
+  var b=e.target.closest('[data-cls]'); if(!b) return; state.cls=b.dataset.cls; state.serviceId=null; state.groupFilter='all'; render();
+});
+document.getElementById('viewTabs').addEventListener('click',function(e){
+  var b=e.target.closest('[data-view]'); if(!b) return; state.view=b.dataset.view; render();
+});
+viewEl.addEventListener('click',function(e){
+  var b=e.target.closest('.gf-btn'); if(!b) return; state.groupFilter=b.dataset.group; render();
+});
+
+/* API exposée pour les onclick inline */
+window.CARNET={ close:closeModal, go:function(v){ state.view=v; render(); } };
+
+init(); render();
+})();
+</script>
+<script>
+/* ---- PWA : service worker + invite d'installation ---- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+(function(){
+  var deferred=null, btn=document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault(); deferred=e; if(btn) btn.style.display='';
+  });
+  if(btn) btn.onclick=function(){
+    if(!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function(){ deferred=null; btn.style.display='none'; });
+  };
+  window.addEventListener('appinstalled', function(){ if(btn) btn.style.display='none'; });
+})();
+</script>
+</body>
+</html>
