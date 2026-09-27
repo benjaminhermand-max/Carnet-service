@@ -104,9 +104,16 @@ tbody tr:nth-child(even) .col-name{background:#FCFAF5}
 tbody tr:nth-child(even) td{background:#FCFAF5}
 .cell{width:100%;height:100%;min-height:58px;border:none;background:transparent;font-size:15px;font-weight:700;color:#cfc6b6;display:flex;align-items:center;justify-content:center}
 .cell.on{background:var(--wine);color:#fff}
-.cell.on::after{content:attr(data-pts)}
+.cell.on.partial{background:#C0871A}
+.cell.on::after{content:attr(data-shown)}
+.cell.on.partial::after{content:attr(data-shown)"/"attr(data-max)}
 .cell:not(.on)::after{content:"—";color:#d9d0c0}
 .cell.off{opacity:.3;pointer-events:none}
+.last-poste{font-size:10.5px;color:var(--muted);text-align:center;padding:2px 4px 4px;line-height:1.2}
+.pronote-toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--muted);background:var(--line-soft);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.pronote-toggle.on{color:#fff;background:var(--exc);border-color:var(--exc)}
+.pronote-chk{width:22px;height:22px;accent-color:var(--exc);cursor:pointer;margin:0}
+.pronote-toggle.on .pronote-chk{accent-color:#fff}
 .abs-col{min-width:74px;max-width:74px;border-left:1px solid var(--line);background:#FBF6EC}
 .poste-col{min-width:148px;max-width:148px;border-left:1px solid var(--line);background:#FBF6EC}
 .poste-btn{width:100%;min-height:58px;border:none;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.2}
@@ -114,6 +121,11 @@ tbody tr:nth-child(even) td{background:#FCFAF5}
 .poste-btn.repeat{background:var(--faible-bg);color:var(--faible)}
 .poste-btn .dot{width:9px;height:9px;border-radius:50%;flex:none}
 .poste-btn:active{background:var(--line-soft)}
+.pt-opts{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.pt-opt{flex:1 1 40%;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:20px;font-weight:700;color:var(--ink);min-height:60px}
+.pt-opt small{font-size:12px;font-weight:600;color:var(--muted)}
+.pt-opt.sel{border-color:var(--wine);background:var(--wine);color:#fff}
+.pt-opt.sel small{color:#f3d9c9}
 .poste-opts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .poste-opt{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:16px;font-weight:600;color:var(--ink);min-height:54px}
 .poste-opt .dot{width:14px;height:14px;border-radius:50%;flex:none}
@@ -452,9 +464,17 @@ function groupFilterBar(cls){
 }
 
 /* ============ Calculs ============ */
+/* valeur d'un critère : true = points pleins (compat historique), nombre = points partiels, sinon 0 */
+function critPointsById(g, crid, max){
+  var v=g.c[crid];
+  if(v===true) return max;
+  if(typeof v==='number') return Math.max(0, Math.min(max, v));
+  return 0;
+}
+function critPoints(g, cr){ return critPointsById(g, cr.id, cr.pts); }
 function scoreOfGrade(g){
   if(!g||!g.c) return 0;
-  var t=0; CRITERIA.forEach(function(cr){ if(g.c[cr.id]) t+=cr.pts; });
+  var t=0; CRITERIA.forEach(function(cr){ t+=critPoints(g,cr); });
   return t;
 }
 function serviceScore(svc, studentId){ return scoreOfGrade(svc.grades[studentId]); }
@@ -509,6 +529,19 @@ function prevWeekPostes(cls, curSvc, studentId){
   }
   return set;
 }
+/* dernier poste réellement tenu par l'élève avant ce service (peu importe l'écart de semaines) */
+function lastPosteInfo(cls, curSvc, studentId){
+  var cur=curSvc.date, best=null;
+  cls.services.forEach(function(s){
+    if(s.date>=cur) return;
+    var g=s.grades[studentId];
+    if(g && !g.absent && g.poste){
+      if(!best || s.date>best.date) best={poste:g.poste, date:s.date};
+    }
+  });
+  return best;
+}
+function frTiny(dateStr){ var p=String(dateStr).split('-'); return p.length===3?p[2]+'/'+p[1]:dateStr; }
 function posteBtnInner(poste){
   return poste ? '<span class="dot" style="background:'+posteColor(poste)+'"></span>'+esc(poste) : '— poste —';
 }
@@ -621,13 +654,14 @@ function renderEval(){
 function rowHTML(svc, st, i){
   var g=svc.grades[st.id]||(svc.grades[st.id]={c:{},comment:'',absent:false,poste:''});
   var absent=!!g.absent;
-  var prevSet=prevWeekPostes(curClass(), svc, st.id);
-  var repeat=g.poste && prevSet[g.poste];
-  var posteCell='<td class="crit poste-col"><button class="poste-btn'+(g.poste?' set':'')+(repeat?' repeat':'')+'" data-poste="'+st.id+'">'+posteBtnInner(g.poste)+'</button></td>';
+  var last=lastPosteInfo(curClass(), svc, st.id);
+  var repeat=g.poste && last && last.poste===g.poste;
+  var lastLine = last ? '<div class="last-poste">dernier : <b style="color:'+posteColor(last.poste)+'">'+posteCode(last.poste)+'</b> · '+frTiny(last.date)+'</div>' : '';
+  var posteCell='<td class="crit poste-col"><button class="poste-btn'+(g.poste?' set':'')+(repeat?' repeat':'')+'" data-poste="'+st.id+'">'+posteBtnInner(g.poste)+'</button>'+lastLine+'</td>';
   var absCell='<td class="crit abs-col"><button class="abs-btn'+(absent?' on':'')+'" data-abs="'+st.id+'">'+(absent?'ABS':'—')+'</button></td>';
   var cells=CRITERIA.map(function(cr){
-    var on=!!g.c[cr.id];
-    return '<td class="crit"><button class="cell'+(on?' on':'')+(absent?' off':'')+'" data-pts="+'+cr.pts+'" data-stu="'+st.id+'" data-cr="'+cr.id+'" aria-label="'+cr.label+'"'+(absent?' disabled':'')+'></button></td>';
+    var pts=critPoints(g,cr); var on=pts>0; var partial=on&&pts<cr.pts;
+    return '<td class="crit"><button class="cell'+(on?' on':'')+(partial?' partial':'')+(absent?' off':'')+'" data-max="'+cr.pts+'" data-shown="'+(on?pts:'')+'" data-stu="'+st.id+'" data-cr="'+cr.id+'" aria-label="'+cr.label+'"'+(absent?' disabled':'')+'></button></td>';
   }).join('');
   var note=scoreOfGrade(g), ap=appreciation(note);
   var noteCell = absent
@@ -657,13 +691,44 @@ function updateNote(tr,g){
   var note=scoreOfGrade(g), ap=appreciation(note);
   badge.className='note-badge '+ap.cls; badge.innerHTML=note+'<small>/'+MAX+'</small>';
 }
+function refreshCellEl(btn,g){
+  var max=+btn.getAttribute('data-max');
+  var pts=critPointsById(g, btn.getAttribute('data-cr'), max);
+  var on=pts>0, partial=on&&pts<max;
+  btn.classList.toggle('on',on);
+  btn.classList.toggle('partial',partial);
+  btn.setAttribute('data-shown', on?pts:'');
+}
+/* sélecteur de points partiels (appui long sur une case) */
+function pointPicker(svc, stuId, crid, max, btn, tr){
+  var g=svc.grades[stuId]||(svc.grades[stuId]={c:{},comment:'',absent:false,poste:''});
+  var cur=critPointsById(g, crid, max);
+  var crName=(CRITERIA.filter(function(x){return x.id===crid})[0]||{}).label||crid;
+  var opts='';
+  for(var v=0; v<=max; v++){
+    var lbl=v+(v===max?' <small>(plein)</small>':(v===0?' <small>(non acquis)</small>':''));
+    opts+='<button class="pt-opt'+(v===cur?' sel':'')+'" data-v="'+v+'">'+lbl+'</button>';
+  }
+  openModal('<h2>'+esc(crName)+'</h2><p class="hint">Points attribués, sur '+max+'.</p>'+
+    '<div class="pt-opts">'+opts+'</div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost btn-sm" onclick="CARNET.close()">Fermer</button></div>');
+  modal.querySelectorAll('.pt-opt').forEach(function(b){
+    b.onclick=function(){
+      var v=+b.dataset.v;
+      g.c[crid] = (v===0) ? false : (v===max ? true : v);
+      save(); closeModal(); refreshCellEl(btn,g); updateNote(tr,g);
+    };
+  });
+}
 function bindRow(svc, tr){
   tr.querySelectorAll('.cell').forEach(function(btn){
     btn.onclick=function(){
-      if(btn.disabled || swipeJustPainted) return;
+      if(btn.disabled || swipeJustPainted || longPressFired) return;
       var g=svc.grades[btn.dataset.stu]||(svc.grades[btn.dataset.stu]={c:{},comment:'',absent:false});
-      g.c[btn.dataset.cr]=!g.c[btn.dataset.cr];
-      btn.classList.toggle('on', g.c[btn.dataset.cr]);
+      var max=+btn.getAttribute('data-max');
+      var cur=critPointsById(g, btn.dataset.cr, max);
+      g.c[btn.dataset.cr] = (cur>0) ? false : true;   // tap = plein / rien
+      refreshCellEl(btn,g);
       updateNote(tr,g); save();
     };
   });
@@ -685,11 +750,11 @@ function bindRow(svc, tr){
 function bindGrid(svc){
   viewEl.querySelectorAll('tbody tr[data-stu]').forEach(function(tr){ bindRow(svc, tr); });
 }
-var swipeJustPainted=false;
+var swipeJustPainted=false, longPressFired=false;
 function bindSwipe(svc){
   var wrap=viewEl.querySelector('.grid-wrap'); if(!wrap) return;
   var table=wrap.querySelector('table.grid'); if(!table) return;
-  var start=null, painted=null, didPaint=false;
+  var start=null, painted=null, didPaint=false, lpTimer=null;
 
   function cellAt(x,y){
     var el=document.elementFromPoint(x,y);
@@ -700,15 +765,28 @@ function bindSwipe(svc){
   function applyCell(c,on){
     var stu=c.getAttribute('data-stu'), cr=c.getAttribute('data-cr');
     var g=svc.grades[stu]||(svc.grades[stu]={c:{},comment:'',absent:false,poste:''});
-    g.c[cr]=on; c.classList.toggle('on',on);
+    g.c[cr]= on ? true : false; refreshCellEl(c,g);
     updateNote(c.closest('tr'), g);
   }
+  function clearLP(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } }
   table.addEventListener('touchstart', function(e){
-    if(e.touches.length!==1){ start=null; return; }
+    if(e.touches.length!==1){ start=null; clearLP(); return; }
     var t=e.touches[0], c=cellAt(t.clientX,t.clientY);
-    if(!c){ start=null; return; }
+    if(!c){ start=null; clearLP(); return; }
     start={x:t.clientX,y:t.clientY,row:c.closest('tr'),cell:c,onStart:c.classList.contains('on'),decided:false,painting:false,target:false};
     painted=Object.create(null); didPaint=false;
+    clearLP();
+    var max=+c.getAttribute('data-max');
+    if(max>1){
+      lpTimer=setTimeout(function(){
+        lpTimer=null;
+        if(start && !start.painting){
+          longPressFired=true;
+          pointPicker(svc, c.getAttribute('data-stu'), c.getAttribute('data-cr'), max, c, c.closest('tr'));
+          start=null;
+        }
+      }, 450);
+    }
   }, {passive:true});
   table.addEventListener('touchmove', function(e){
     if(!start || e.touches.length!==1) return;
@@ -716,7 +794,8 @@ function bindSwipe(svc){
     if(!start.decided){
       var dx=Math.abs(t.clientX-start.x), dy=Math.abs(t.clientY-start.y);
       if(dx<8 && dy<8) return;
-      if(dy>=dx){ start=null; return; }      // geste vertical -> défilement normal
+      clearLP();                              // le doigt bouge -> ce n'est pas un appui long
+      if(dy>=dx){ start=null; return; }       // geste vertical -> défilement normal
       start.decided=true; start.painting=true; start.target=!start.onStart;
       applyCell(start.cell, start.target); painted[start.cell.getAttribute('data-cr')]=true; didPaint=true;
     }
@@ -730,8 +809,10 @@ function bindSwipe(svc){
     }
   }, {passive:false});
   function end(){
+    clearLP();
     if(start && start.painting) save();
     if(didPaint){ swipeJustPainted=true; setTimeout(function(){ swipeJustPainted=false; }, 400); }
+    if(longPressFired){ setTimeout(function(){ longPressFired=false; }, 500); }
     start=null;
   }
   table.addEventListener('touchend', end);
@@ -745,6 +826,7 @@ function renderHistory(){
     viewEl.innerHTML=emptyBlock('Pas encore d’historique','Les services notés apparaîtront ici, regroupés par semaine avec la moyenne de chaque élève.','');
     return;
   }
+  if(!cls.pronote) cls.pronote={};
   var weeks=weeksOf(cls);
   var html='<div class="row-between"><div><div class="eyebrow">'+state.cls+' · '+state.year+'</div><h2 class="title-lg">Historique par semaine</h2></div>'+
     '<button class="btn btn-ghost btn-sm" id="printYearBtn">Imprimer le bilan annuel</button></div>';
@@ -766,9 +848,12 @@ function renderHistory(){
         '<td>'+avgCell+'</td></tr>';
     }).join('');
     var svcHeads=wk.services.map(function(s){return '<th>'+capit(frShort(s.date))+'</th>'}).join('');
+    var done=isPronoteDone(cls, wk.key);
+    var pchk='<label class="pronote-toggle'+(done?' on':'')+'"><input type="checkbox" class="pronote-chk" data-wk="'+wk.key+'"'+(done?' checked':'')+'> Noté sur Pronote</label>';
     html+='<div class="card week-card">'+
       '<div class="week-head"><div><h3>Semaine '+wk.key.split('-S')[1]+'</h3><div class="svc-tags">'+tags+'</div></div>'+
-      '<button class="btn btn-ghost btn-sm" data-printweek="'+wk.key+'">Imprimer cette semaine</button></div>'+
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+pchk+
+      '<button class="btn btn-ghost btn-sm" data-printweek="'+wk.key+'">Imprimer cette semaine</button></div></div>'+
       '<table class="summary"><thead><tr><th style="text-align:left">Élève</th>'+svcHeads+'<th>Moyenne /20</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   });
   viewEl.innerHTML=html;
@@ -776,6 +861,19 @@ function renderHistory(){
   viewEl.querySelectorAll('[data-printweek]').forEach(function(b){
     b.onclick=function(){ var k=this.dataset.printweek; printWeek(cls, weeksOf(cls).filter(function(w){return w.key===k})[0]); };
   });
+  viewEl.querySelectorAll('.pronote-chk').forEach(function(chk){
+    chk.onchange=function(){
+      if(this.checked) cls.pronote[this.dataset.wk]=true; else delete cls.pronote[this.dataset.wk];
+      save(); renderHistory();
+    };
+  });
+}
+/* vrai si la semaine est marquée notée sur Pronote (gère l'ancien format par élève) */
+function isPronoteDone(cls, wkKey){
+  var v=cls.pronote && cls.pronote[wkKey];
+  if(v===true) return true;
+  if(v && typeof v==='object'){ for(var k in v){ if(v[k]) return true; } }
+  return false;
 }
 
 /* ---------- Vue POSTES ---------- */
@@ -979,8 +1077,8 @@ function refreshPosteBtn(stuId, svc){
   var tr=viewEl.querySelector('tr[data-stu="'+stuId+'"]'); if(!tr) return;
   var btn=tr.querySelector('.poste-btn'); if(!btn) return;
   var g=svc.grades[stuId]||{poste:''};
-  var prev=prevWeekPostes(curClass(), svc, stuId);
-  var repeat=g.poste && prev[g.poste];
+  var last=lastPosteInfo(curClass(), svc, stuId);
+  var repeat=g.poste && last && last.poste===g.poste;
   btn.className='poste-btn'+(g.poste?' set':'')+(repeat?' repeat':'');
   btn.innerHTML=posteBtnInner(g.poste);
 }
@@ -988,17 +1086,16 @@ function postePickerModal(svc, stuId){
   var cls=curClass();
   var st=cls.students.filter(function(s){return s.id===stuId})[0];
   var g=svc.grades[stuId]||(svc.grades[stuId]={c:{},comment:'',absent:false,poste:''});
-  var prev=prevWeekPostes(cls, svc, stuId);
-  var prevList=Object.keys(prev);
-  var hint = prevList.length
-    ? '<p class="hint">Semaine précédente : '+prevList.map(function(p){return '<span class="prev-tag">'+esc(p)+'</span>'}).join(' ')+' — <b style="color:var(--faible)">à éviter</b> pour faire tourner les postes.</p>'
+  var last=lastPosteInfo(cls, svc, stuId);
+  var hint = last
+    ? '<p class="hint">Dernier poste tenu : <span class="prev-tag">'+esc(last.poste)+'</span> le '+frTiny(last.date)+' — <b style="color:var(--faible)">à éviter</b> pour faire tourner les postes.</p>'
     : '<p class="hint">Choisis le poste tenu par '+esc(st.name)+' pour ce service.</p>';
   var opts=POSTES.map(function(p){
-    var isPrev=!!prev[p], isSel=(g.poste===p);
+    var isPrev=(last && last.poste===p), isSel=(g.poste===p);
     return '<button class="poste-opt'+(isPrev?' prev':'')+(isSel?' sel':'')+'" data-p="'+esc(p)+'">'+
       '<span class="dot" style="background:'+posteColor(p)+'"></span>'+
       '<span class="opt-label">'+esc(p)+'</span>'+
-      (isPrev?'<span class="prev-badge">sem. dernière</span>':'')+
+      (isPrev?'<span class="prev-badge">dernier</span>':'')+
       (isSel?'<span class="sel-badge">✓</span>':'')+'</button>';
   }).join('');
   openModal('<h2>Poste — '+esc(st.name)+'</h2>'+hint+
@@ -1078,7 +1175,7 @@ function printService(cls){
       var blanks=CRITERIA.map(function(){return '<td>–</td>'}).join('');
       return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+poste+blanks+'<td><b>Abs</b></td><td class="l">'+esc(g.comment||'')+'</td></tr>';
     }
-    var cells=CRITERIA.map(function(c){return '<td>'+(g.c[c.id]?c.pts:'·')+'</td>'}).join('');
+    var cells=CRITERIA.map(function(c){var pv=critPoints(g,c);return '<td>'+(pv>0?pv:'·')+'</td>'}).join('');
     var note=scoreOfGrade(g);
     return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+poste+cells+'<td><b>'+note+'</b></td><td class="l">'+esc(g.comment||'')+'</td></tr>';
   }).join('');
