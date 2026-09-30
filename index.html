@@ -545,11 +545,21 @@ function frTiny(dateStr){ var p=String(dateStr).split('-'); return p.length===3?
 function posteBtnInner(poste){
   return poste ? '<span class="dot" style="background:'+posteColor(poste)+'"></span>'+esc(poste) : '— poste —';
 }
-/* moyenne semaine = moyenne des services PRÉSENTS ; null si absent à tous */
+/* un élève est "évalué" sur un service s'il est présent ET a au moins une trace
+   (une case cochée, un poste, ou un commentaire) — sinon il est "non évalué" (pas noté) */
+function isEvaluated(svc, studentId){
+  var g=svc.grades[studentId];
+  if(!g || g.absent) return false;
+  if(g.poste) return true;
+  if(g.comment && g.comment.trim()) return true;
+  if(g.c){ for(var k in g.c){ if(g.c[k]) return true; } }
+  return false;
+}
+/* moyenne semaine = moyenne des services réellement ÉVALUÉS ; null si aucun */
 function weekAvg(week, studentId){
   var sum=0,n=0;
   week.services.forEach(function(s){
-    if(isAbsent(s,studentId)) return;     // absence exclue du calcul
+    if(!isEvaluated(s,studentId)) return;   // absent ou non évalué -> exclu du calcul
     sum+=serviceScore(s,studentId); n++;
   });
   return n?round1(sum/n):null;
@@ -837,12 +847,13 @@ function renderHistory(){
     var rows=filteredStudents(cls).map(function(st,i){
       var perSvc=wk.services.map(function(s){
         if(isAbsent(s,st.id)) return '<td><span class="mini-note" style="color:var(--muted)">Abs</span></td>';
+        if(!isEvaluated(s,st.id)) return '<td><span class="mini-note" style="color:#cbbfae">—</span></td>';
         var sc=serviceScore(s,st.id); var ap=appreciation(sc);
         return '<td><span class="mini-note" style="color:var(--'+ap.band+')">'+sc+'</span></td>';
       }).join('');
       var avg=weekAvg(wk,st.id);
       var avgCell = (avg===null)
-        ? '<span class="note-badge b-abs" style="min-width:54px;font-size:14px">Abs</span>'
+        ? '<span class="note-badge" style="min-width:54px;font-size:14px;background:#F0E9DC;color:#b3a894;border:1px solid var(--line)">—</span>'
         : '<span class="note-badge '+appreciation(avg).cls+'" style="min-width:54px;font-size:16px">'+avg+'</span>';
       return '<tr><td class="name">'+(i+1)+'. '+esc(st.name)+'</td>'+perSvc+
         '<td>'+avgCell+'</td></tr>';
@@ -1187,9 +1198,9 @@ function printService(cls){
 function printWeek(cls,wk){
   var svcHeads=wk.services.map(function(s){return '<th>'+capit(frShort(s.date))+'</th>'}).join('');
   var rows=filteredStudents(cls).map(function(st,i){
-    var per=wk.services.map(function(s){return '<td>'+(isAbsent(s,st.id)?'Abs':serviceScore(s,st.id))+'</td>'}).join('');
+    var per=wk.services.map(function(s){return '<td>'+(isAbsent(s,st.id)?'Abs':(isEvaluated(s,st.id)?serviceScore(s,st.id):'—'))+'</td>'}).join('');
     var avg=weekAvg(wk,st.id);
-    var note=(avg===null)?'Abs':avg, txt=(avg===null)?'Absent sur la semaine':appreciation(avg).txt;
+    var note=(avg===null)?'—':avg, txt=(avg===null)?'Non évalué cette semaine':appreciation(avg).txt;
     return '<tr><td class="l">'+(i+1)+'. '+esc(st.name)+'</td>'+per+'<td><b>'+note+'</b></td><td class="l">'+txt+'</td></tr>';
   }).join('');
   printArea.innerHTML='<div class="pr-title">'+state.cls+groupSuffix()+' — Semaine '+wk.key.split('-S')[1]+'</div>'+
@@ -1200,7 +1211,7 @@ function printWeek(cls,wk){
 function printYear(cls,weeks){
   var weekHeads=weeks.map(function(w){return '<th>S'+w.key.split('-S')[1]+'</th>'}).join('');
   var rows=filteredStudents(cls).map(function(st,i){
-    var per=weeks.map(function(w){var a=weekAvg(w,st.id);return '<td>'+(a===null?'Abs':a)+'</td>'}).join('');
+    var per=weeks.map(function(w){var a=weekAvg(w,st.id);return '<td>'+(a===null?'—':a)+'</td>'}).join('');
     var vals=weeks.map(function(w){return weekAvg(w,st.id)}).filter(function(v){return v!==null});
     var gen=vals.length?round1(vals.reduce(function(a,b){return a+b},0)/vals.length):null;
     var note=(gen===null)?'—':gen, txt=(gen===null)?'Aucun service noté':appreciation(gen).txt;
