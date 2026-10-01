@@ -102,7 +102,7 @@ thead .col-name{z-index:7;background:#F6EFE2}
 .col-name .nm{font-weight:600;font-size:15px;display:block;padding:12px 0}
 tbody tr:nth-child(even) .col-name{background:#FCFAF5}
 tbody tr:nth-child(even) td{background:#FCFAF5}
-.cell{width:100%;height:100%;min-height:58px;border:none;background:transparent;font-size:15px;font-weight:700;color:#cfc6b6;display:flex;align-items:center;justify-content:center}
+.cell{width:100%;height:100%;min-height:58px;border:none;background:transparent;font-size:15px;font-weight:700;color:#cfc6b6;display:flex;align-items:center;justify-content:center;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .cell.on{background:var(--wine);color:#fff}
 .cell.on.partial{background:#C0871A}
 .cell.on::after{content:attr(data-shown)}
@@ -764,7 +764,7 @@ var swipeJustPainted=false, longPressFired=false;
 function bindSwipe(svc){
   var wrap=viewEl.querySelector('.grid-wrap'); if(!wrap) return;
   var table=wrap.querySelector('table.grid'); if(!table) return;
-  var start=null, painted=null, didPaint=false, lpTimer=null;
+  var start=null, painted=null, didPaint=false, lpTimer=null, lpInfo=null;
 
   function cellAt(x,y){
     var el=document.elementFromPoint(x,y);
@@ -778,7 +778,7 @@ function bindSwipe(svc){
     g.c[cr]= on ? true : false; refreshCellEl(c,g);
     updateNote(c.closest('tr'), g);
   }
-  function clearLP(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } }
+  function clearLP(){ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } lpInfo=null; }
   table.addEventListener('touchstart', function(e){
     if(e.touches.length!==1){ start=null; clearLP(); return; }
     var t=e.touches[0], c=cellAt(t.clientX,t.clientY);
@@ -788,14 +788,15 @@ function bindSwipe(svc){
     clearLP();
     var max=+c.getAttribute('data-max');
     if(max>1){
+      lpInfo={cell:c, stu:c.getAttribute('data-stu'), cr:c.getAttribute('data-cr'), max:max, tr:c.closest('tr')};
       lpTimer=setTimeout(function(){
         lpTimer=null;
-        if(start && !start.painting){
+        if(lpInfo && !(start && start.painting)){   // doigt resté immobile -> appui long
           longPressFired=true;
-          pointPicker(svc, c.getAttribute('data-stu'), c.getAttribute('data-cr'), max, c, c.closest('tr'));
-          start=null;
+          pointPicker(svc, lpInfo.stu, lpInfo.cr, lpInfo.max, lpInfo.cell, lpInfo.tr);
+          start=null; lpInfo=null;
         }
-      }, 450);
+      }, 350);
     }
   }, {passive:true});
   table.addEventListener('touchmove', function(e){
@@ -818,15 +819,16 @@ function bindSwipe(svc){
       }
     }
   }, {passive:false});
-  function end(){
-    clearLP();
+  function finishPaint(){
     if(start && start.painting) save();
     if(didPaint){ swipeJustPainted=true; setTimeout(function(){ swipeJustPainted=false; }, 400); }
     if(longPressFired){ setTimeout(function(){ longPressFired=false; }, 500); }
     start=null;
   }
-  table.addEventListener('touchend', end);
-  table.addEventListener('touchcancel', end);
+  table.addEventListener('touchend', function(){ clearLP(); finishPaint(); });
+  // touchcancel : ne PAS annuler un appui long immobile (le minuteur décidera) ; sinon reset
+  table.addEventListener('touchcancel', function(){ finishPaint(); });
+  table.addEventListener('contextmenu', function(e){ e.preventDefault(); }); // pas de menu natif sur appui long
 }
 
 /* ---------- Vue HISTORIQUE ---------- */
