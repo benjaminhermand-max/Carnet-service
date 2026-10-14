@@ -1165,21 +1165,24 @@ function downloadBackup(json, fname){
   a.download=fname; document.body.appendChild(a); a.click();
   setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
 }
-/* sauvegarde : partage Android (Drive/Mail en 2 taps) si dispo, sinon téléchargement */
+/* sauvegarde : partage Android (Drive/Mail en 2 taps) si dispo, sinon téléchargement.
+   NB : Chrome refuse de partager un .json -> on partage un .txt (même contenu), accepté au partage. */
 function doBackup(){
   DB.lastBackup=Date.now(); save();
-  var json=JSON.stringify(DB,null,2), fname=backupFilename();
+  var json=JSON.stringify(DB,null,2);
+  var dstr=new Date().toISOString().slice(0,10);
+  var fnameJson='carnet-service-'+dstr+'.json';
   updateBackupReminder();
   try{
-    var file=new File([json], fname, {type:'application/json'});
-    if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
-      navigator.share({files:[file], title:'Sauvegarde Carnet de Service', text:'Sauvegarde du '+new Date().toLocaleDateString('fr-FR')})
+    var shareFile=new File([json], 'carnet-sauvegarde-'+dstr+'.txt', {type:'text/plain'});
+    if(navigator.canShare && navigator.canShare({files:[shareFile]}) && navigator.share){
+      navigator.share({files:[shareFile], title:'Sauvegarde Carnet de Service'})
         .then(function(){ toast('Sauvegarde partagée'); })
-        .catch(function(){ downloadBackup(json,fname); });
+        .catch(function(err){ if(err && err.name==='AbortError') return; downloadBackup(json,fnameJson); });
       return;
     }
   }catch(e){}
-  downloadBackup(json,fname);
+  downloadBackup(json,fnameJson);
   toast('Sauvegarde téléchargée');
 }
 function daysSinceBackup(){
@@ -1210,7 +1213,7 @@ function dataModal(){
     '<button class="btn btn-primary" id="m_share">Sauvegarder (Drive / mail)</button>'+
     '<button class="btn btn-ghost" id="m_export">Télécharger le fichier</button>'+
     '<button class="btn btn-ghost" id="m_import">Importer une sauvegarde</button></div>'+
-    '<input type="file" id="m_file" accept="application/json,.json" style="display:none">'+
+    '<input type="file" id="m_file" accept=".json,.txt,application/json,text/plain" style="display:none">'+
     '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Fermer</button></div>');
   document.getElementById('m_share').onclick=function(){ doBackup(); };
   document.getElementById('m_export').onclick=function(){
