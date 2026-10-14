@@ -214,6 +214,11 @@ table.summary td.name{text-align:left;font-weight:500}
 .cmt-name{font-weight:600;color:var(--wine)}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:15px;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
+.backup-reminder{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between;background:#FBEFD6;border:1px solid #E6C98A;color:#6B5320;border-radius:12px;padding:12px 16px;margin:0 0 14px;font-size:14.5px;font-weight:600}
+.backup-reminder .br-actions{display:flex;gap:8px;flex-wrap:wrap}
+.br-btn{border:none;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:700;min-height:42px;cursor:pointer}
+.br-go{background:var(--wine);color:#fff}
+.br-later{background:transparent;color:#6B5320;border:1px solid #E6C98A}
 .toast.show{opacity:1}
 
 /* ---------- Print ---------- */
@@ -257,6 +262,14 @@ table.summary td.name{text-align:left;font-weight:500}
     <button class="icon-btn" id="dataBtn" title="Sauvegarde / restauration">⋯ Données</button>
     <button class="icon-btn" id="installBtn" title="Installer l'application" style="display:none">⤓ Installer</button>
   </header>
+
+  <div id="backupReminder" class="backup-reminder" style="display:none">
+    <span id="backupMsg">Pense à sauvegarder tes notes.</span>
+    <span class="br-actions">
+      <button class="br-btn br-go" id="backupNow">Sauvegarder maintenant</button>
+      <button class="br-btn br-later" id="backupLater">Plus tard</button>
+    </span>
+  </div>
 
   <div id="app-view">
     <!-- Classe tabs -->
@@ -1145,19 +1158,64 @@ function addYearModal(){
     DB.currentYear=v; state.year=v; state.serviceId=null; save(); closeModal(); render(); toast('Année créée');
   };
 }
+function backupFilename(){ return 'carnet-service-'+new Date().toISOString().slice(0,10)+'.json'; }
+function downloadBackup(json, fname){
+  var blob=new Blob([json],{type:'application/json'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=fname; document.body.appendChild(a); a.click();
+  setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
+}
+/* sauvegarde : partage Android (Drive/Mail en 2 taps) si dispo, sinon téléchargement */
+function doBackup(){
+  DB.lastBackup=Date.now(); save();
+  var json=JSON.stringify(DB,null,2), fname=backupFilename();
+  updateBackupReminder();
+  try{
+    var file=new File([json], fname, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+      navigator.share({files:[file], title:'Sauvegarde Carnet de Service', text:'Sauvegarde du '+new Date().toLocaleDateString('fr-FR')})
+        .then(function(){ toast('Sauvegarde partagée'); })
+        .catch(function(){ downloadBackup(json,fname); });
+      return;
+    }
+  }catch(e){}
+  downloadBackup(json,fname);
+  toast('Sauvegarde téléchargée');
+}
+function daysSinceBackup(){
+  if(!DB.lastBackup) return null;
+  return Math.floor((Date.now()-DB.lastBackup)/86400000);
+}
+var reminderDismissed=false;
+function updateBackupReminder(){
+  var el=document.getElementById('backupReminder'); if(!el) return;
+  var hasData = DB.years && Object.keys(DB.years).some(function(y){
+    return CLASSES.some(function(c){ return DB.years[y][c] && DB.years[y][c].services.some(function(s){ return Object.keys(s.grades||{}).length; }); });
+  });
+  var d=daysSinceBackup();
+  var show = hasData && !reminderDismissed && (d===null || d>=7);
+  el.style.display = show ? 'flex' : 'none';
+  if(show){
+    document.getElementById('backupMsg').textContent =
+      (d===null) ? '⚠ Tu n’as pas encore sauvegardé tes notes. Mets-les en sécurité.'
+                 : '⚠ Dernière sauvegarde il y a '+d+' jour'+(d>1?'s':'')+'. Pense à sauvegarder.';
+  }
+}
 function dataModal(){
-  var warn = storageOK ? '' : '<p class="hint" style="color:var(--faible)">⚠ La sauvegarde automatique n’est pas disponible ici (aperçu). Sur ta tablette, ouvre le fichier directement : les données seront alors gardées. Pense à exporter régulièrement en sécurité.</p>';
+  var d=daysSinceBackup();
+  var last = (d===null) ? 'jamais' : (d===0 ? "aujourd'hui" : 'il y a '+d+' jour'+(d>1?'s':''));
   openModal('<h2>Sauvegarde des données</h2>'+
-    '<p class="hint">Les notes sont enregistrées sur cet appareil, dans ce navigateur. Exporte un fichier de sauvegarde pour les protéger ou les transférer sur un autre appareil.</p>'+warn+
-    '<div class="modal-actions" style="justify-content:flex-start">'+
-    '<button class="btn btn-primary" id="m_export">Exporter une sauvegarde</button>'+
+    '<p class="hint">Tes notes sont enregistrées sur cet appareil uniquement. Sauvegarde-les régulièrement pour les protéger. Dernière sauvegarde : <b>'+last+'</b>.</p>'+
+    '<div class="modal-actions" style="justify-content:flex-start;flex-wrap:wrap">'+
+    '<button class="btn btn-primary" id="m_share">Sauvegarder (Drive / mail)</button>'+
+    '<button class="btn btn-ghost" id="m_export">Télécharger le fichier</button>'+
     '<button class="btn btn-ghost" id="m_import">Importer une sauvegarde</button></div>'+
-    '<input type="file" id="m_file" accept="application/json" style="display:none">'+
+    '<input type="file" id="m_file" accept="application/json,.json" style="display:none">'+
     '<div class="modal-actions"><button class="btn btn-ghost" onclick="CARNET.close()">Fermer</button></div>');
+  document.getElementById('m_share').onclick=function(){ doBackup(); };
   document.getElementById('m_export').onclick=function(){
-    var blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
-    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='carnet-service-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+    DB.lastBackup=Date.now(); save(); updateBackupReminder();
+    downloadBackup(JSON.stringify(DB,null,2), backupFilename());
   };
   var fi=document.getElementById('m_file');
   document.getElementById('m_import').onclick=function(){ fi.click(); };
@@ -1274,7 +1332,14 @@ viewEl.addEventListener('click',function(e){
 /* API exposée pour les onclick inline */
 window.CARNET={ close:closeModal, go:function(v){ state.view=v; render(); } };
 
-init(); render();
+/* Rappel de sauvegarde */
+(function(){
+  var now=document.getElementById('backupNow'), later=document.getElementById('backupLater');
+  if(now) now.onclick=function(){ doBackup(); };
+  if(later) later.onclick=function(){ reminderDismissed=true; updateBackupReminder(); };
+})();
+
+init(); render(); updateBackupReminder();
 })();
 </script>
 <script>
